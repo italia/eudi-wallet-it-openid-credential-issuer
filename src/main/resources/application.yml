@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: it-pid-provider
+  output:
+    ansi:
+      enabled: ALWAYS
+server:
+  forward-headers-strategy: framework
+springdoc:
+  cache:
+   disabled: true
+  packages-to-scan:
+  - it.ipzs.pidprovider.controller
+  paths-to-exclude:
+  - /cie/**
+auth-controller:
+  redirect-url: http://localhost:8080/cie/login
+consent-controller:
+  consent-url: http://localhost:8080/cie/consent
+  accepted-url: http://localhost:8080/cie/accepted
+  callback-url: http://localhost:8080/callback
+  
