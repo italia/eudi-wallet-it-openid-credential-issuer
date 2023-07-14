@@ -1,6 +1,7 @@
 package it.ipzs.pidprovider.controller;
 
 import java.net.URI;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.Map;
 
@@ -18,10 +19,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 
 import it.ipzs.pidprovider.dto.CredentialResponse;
 import it.ipzs.pidprovider.dto.ParResponse;
+import it.ipzs.pidprovider.dto.ProofRequest;
 import it.ipzs.pidprovider.dto.TokenResponse;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.service.AuthorizationService;
@@ -124,6 +128,7 @@ public class AuthController {
 			@RequestHeader("DPoP") String dpop, @RequestHeader("Authorization") String authorization)
 			throws JOSEException, ParseException {
 
+		ProofRequest proofReq = null;
 		try {
 			credentialService.checkDpop(dpop);
 		} catch (Exception e) {
@@ -131,13 +136,29 @@ public class AuthController {
 			log.error("", e);
 		}
 		try {
-			credentialService.checkAuthorizationAndProof(authorization, proof);
+			ObjectMapper om = new ObjectMapper();
+			try {
+				proofReq = om.readValue(proof, ProofRequest.class);
+			} catch (JsonProcessingException e) {
+				log.error("", e);
+			}
+			credentialService.checkAuthorizationAndProof(authorization, proofReq);
 		} catch (Exception e) {
 			// TODO remove try-catch after integration
 			log.error("", e);
 		}
-		CredentialResponse response = credentialService.generateCredentialResponse(proof);
-		return ResponseEntity.ok(response);
+		CredentialResponse response;
+		try {
+			response = credentialService.generateSdCredentialResponse(proofReq);
+			return ResponseEntity.ok(response);
+		} catch (NoSuchAlgorithmException | JOSEException e) {
+			log.error("", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		} catch (ParseException e) {
+			log.error("", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+		}
+		
 	}
 
 }

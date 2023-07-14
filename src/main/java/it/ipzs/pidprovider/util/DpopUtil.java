@@ -1,6 +1,7 @@
 package it.ipzs.pidprovider.util;
 
 import java.text.ParseException;
+import java.util.Date;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -90,8 +91,8 @@ public class DpopUtil {
 		return claims.getStringClaim(HTU_CLAIM);
 	}
 
-	public String getIatClaim(JWTClaimsSet claims) throws ParseException {
-		return claims.getStringClaim(IAT_CLAIM);
+	public Date getIatClaim(JWTClaimsSet claims) throws ParseException {
+		return claims.getIssueTime();
 	}
 
 	public Base64 getSignature(String dpop) throws ParseException {

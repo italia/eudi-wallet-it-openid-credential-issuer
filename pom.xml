@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>it-pid-provider</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.1.0</version>
 	<name>it-pid-provider</name>
 	<description>IT PID Provider</description>
 	<properties>
@@ -56,10 +56,26 @@
 			<version>0.9.1</version>
 		</dependency>
 		<dependency>
+			<groupId>com.authlete</groupId>
+			<artifactId>sd-jwt</artifactId>
+			<version>1.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>jakarta.ws.rs</groupId>
 			<artifactId>jakarta.ws.rs-api</artifactId>
 		</dependency>
-
 	</dependencies>
 	<build>
 		<plugins>
