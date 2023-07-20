@@ -1,11 +1,9 @@
 package it.ipzs.pidprovider.dto;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
@@ -15,12 +13,12 @@ public class VerificationDto implements Serializable {
 
 	private static final long serialVersionUID = -7579733851455483972L;
 
-	@JsonProperty("trust_framework")
-	private String trustFramework;
+	// snake_case is required by SD-JWT RFC
 
-	@JsonProperty("assurance_level")
-	private String assuranceLevel;
+	private String trust_framework;
 
-	private Collection<Object> _sd;
+	private String assurance_level;
+
+	private Object _sd;
 
 }

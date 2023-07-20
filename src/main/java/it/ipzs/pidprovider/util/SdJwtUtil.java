@@ -64,7 +64,13 @@ public class SdJwtUtil {
 	public String generateCredential(String kid, VerifiedClaims vc)
 			throws JOSEException, NoSuchAlgorithmException {
 
+		// TODO implement trust chain
+
+		List<String> localTrustChain = List.of(
+				"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwaWQtcHJvdmlkZXIiLCJpYXQiOjE2ODc3MDQzNjgsImV4cCI6MTc4Nzc0MDM2OH0.ZEE7hkHVCPwXGgo7035865YZl2MTf4o05NUTTQ-LRXc",
+				"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0cnVzdC1yZWdpc3RyeSIsImlhdCI6MTY4NzcwNDM2OCwiZXhwIjoxNzg3NzQwMzY4fQ.V-yHsWkfdCiK7trm4xLJLpdxi5LJThvzJNM_tWYzzQE");
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(new JOSEObjectType("vc+sd-jwt")).keyID(kid)
+				.customParam("trust_chain", localTrustChain)
 				.build();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
@@ -74,6 +80,7 @@ public class SdJwtUtil {
 		JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
 				.privateKey((RSAPrivateKey) keyPair.getPrivate()).keyUse(KeyUse.SIGNATURE).keyID(kid)
 				.issueTime(new Date()).keyIDFromThumbprint().build();
+
 
 		Cnf cnf = new Cnf();
 		JWKDto jwkdto = new JWKDto();

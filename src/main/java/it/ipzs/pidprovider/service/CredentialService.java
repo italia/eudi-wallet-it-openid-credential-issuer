@@ -62,7 +62,7 @@ public class CredentialService {
 		Disclosure nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
 		Disclosure familyClaim = sdJwtUtil.generateGenericDisclosure("family_name", "Rossi");
 		Disclosure uniqueIdClaim = sdJwtUtil.generateGenericDisclosure("unique_id", "idANPR");
-		Disclosure birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate", "10-01-1980");
+		Disclosure birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate", "1980-10-01");
 		Disclosure placeOfBirthClaim = sdJwtUtil.generateGenericDisclosure("place_of_birth",
 				PlaceOfBirthDto.builder().country("IT").locality("Rome").build());
 		Disclosure taxClaim = sdJwtUtil.generateGenericDisclosure("tax_id_number", "TINIT-RSSMRA80A10H501A");
@@ -71,8 +71,8 @@ public class CredentialService {
 		VerifiedClaims vc = new VerifiedClaims();
 
 		VerificationDto ver = new VerificationDto();
-		ver.setAssuranceLevel("high");
-		ver.setTrustFramework("eidas");
+		ver.setAssurance_level("high");
+		ver.setTrust_framework("eidas");
 		EvidenceDto ev = new EvidenceDto();
 		ev.setType("electronic_record");
 
@@ -97,14 +97,14 @@ public class CredentialService {
 
 		SDObjectBuilder evbuilder = new SDObjectBuilder();
 		evbuilder.putSDClaim("verification", ev);
-		ver.set_sd(evbuilder.build().values());
+		ver.set_sd(evbuilder.build().get("_sd"));
 
 
 
 		vc.setClaims(builder.build());
 		vc.setVerification(ver);
 
-		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", evbuilder.build());
+		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", ev);
 
 		SDJWT sdjwt = new SDJWT(
 				sdJwtUtil.generateCredential(kid, vc),
