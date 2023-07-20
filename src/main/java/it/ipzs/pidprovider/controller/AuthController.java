@@ -55,24 +55,24 @@ public class AuthController {
 	}
 
 	@PostMapping(path = "/as/par", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<ParResponse> parRequest(@FormParam("response_type") String responseType,
-			@FormParam("client_id") String clientId, @FormParam("code_challenge") String codeChallenge,
-			@FormParam("code_challenge_method") String codeChallengeMethod,
-			@FormParam("client_assertion_type") String clientAssertionType,
-			@FormParam("client_assertion") String clientAssertion, @FormParam("request") String request) {
+	public ResponseEntity<ParResponse> parRequest(@FormParam("response_type") String response_type,
+			@FormParam("client_id") String client_id, @FormParam("code_challenge") String code_challenge,
+			@FormParam("code_challenge_method") String code_challenge_method,
+			@FormParam("client_assertion_type") String client_assertion_type,
+			@FormParam("client_assertion") String client_assertion, @FormParam("request") String request) {
 
 		// TODO check validity client assertion
-		parService.validateClientAssertion(clientAssertion);
+		parService.validateClientAssertion(client_assertion);
 		ParResponse response = parService.generateRequestUri(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
 	@GetMapping("/authorize")
-	public ResponseEntity<?> authorize(@RequestParam("client_id") String clientId,
-			@RequestParam("request_uri") String requestUri) {
+	public ResponseEntity<?> authorize(@RequestParam("client_id") String client_id,
+			@RequestParam("request_uri") String request_uri) {
 
 		// TODO eIDAS LoA High
-		String stateParam = authService.retrieveStateParam(clientId, requestUri);
+		String stateParam = authService.retrieveStateParam(client_id, request_uri);
 		return ResponseEntity.status(HttpStatus.FOUND)
 				.location(URI.create(redirectUrl.concat("?state=").concat(stateParam))).build();
 	}
@@ -98,11 +98,11 @@ public class AuthController {
 	}
 
 	@PostMapping(path = "/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<TokenResponse> token(@FormParam("grant_type") String grantType,
-			@FormParam("client_id") String clientId, @FormParam("code") String code,
-			@FormParam("code_verifier") String codeVerifier,
-			@FormParam("client_assertion_type") String clientAssertionType,
-			@FormParam("client_assertion") String clientAssertion, @FormParam("redirect_uri") String redirectUri,
+	public ResponseEntity<TokenResponse> token(@FormParam("grant_type") String grant_type,
+			@FormParam("client_id") String client_id, @FormParam("code") String code,
+			@FormParam("code_verifier") String code_verifier,
+			@FormParam("client_assertion_type") String client_assertion_type,
+			@FormParam("client_assertion") String client_assertion, @FormParam("redirect_uri") String redirect_uri,
 			@RequestHeader("DPoP") String dpop) throws JOSEException, ParseException {
 
 		try {
@@ -112,18 +112,18 @@ public class AuthController {
 			log.error("", e);
 		}
 		try {
-			tokenService.checkParams(clientId, code, codeVerifier);
+			tokenService.checkParams(client_id, code, code_verifier);
 		} catch (Exception e) {
 			log.error("", e);
 			// TODO return error message code after integration
 		}
-		TokenResponse response = tokenService.generateTokenResponse(clientId, dpop);
+		TokenResponse response = tokenService.generateTokenResponse(client_id, dpop);
 		return ResponseEntity.ok(response);
 	}
 
 	@PostMapping(path = "/credential", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CredentialResponse> credential(
-			@FormParam("credential_definition") String credentialDefinition, @FormParam("format") String format,
+			@FormParam("credential_definition") String credential_definition, @FormParam("format") String format,
 			@FormParam("proof") String proof,
 			@RequestHeader("DPoP") String dpop, @RequestHeader("Authorization") String authorization)
 			throws JOSEException, ParseException {
