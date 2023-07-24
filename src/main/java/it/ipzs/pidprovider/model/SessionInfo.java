@@ -20,4 +20,6 @@ public class SessionInfo {
 	private boolean verified;
 
 	private String nonce;
+
+	private Object cnf;
 }

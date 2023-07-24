@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import org.mockito.MockitoAnnotations;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 
+import it.ipzs.pidprovider.dto.Cnf;
 import it.ipzs.pidprovider.dto.ParResponse;
 import it.ipzs.pidprovider.service.ParService;
 import it.ipzs.pidprovider.util.ParRequestJwtUtil;
@@ -53,7 +55,7 @@ class ParServiceTest {
 		when(walletInstanceUtil.parse(anyString())).thenReturn(jwtClaimsSet);
 
 		// Test
-		parService.validateClientAssertion("clientAssertion");
+		parService.validateClientAssertionAndRetrieveCnf("clientAssertion");
 
 		// Verify
 		verify(walletInstanceUtil, times(1)).parse("clientAssertion");
@@ -70,10 +72,11 @@ class ParServiceTest {
 
 				.build();
 		when(parRequestJwtUtil.parse(anyString())).thenReturn(jwtClaimsSet);
+		Cnf cnf = mock(Cnf.class);
 
 
 		// Test
-		ParResponse response = parService.generateRequestUri("validRequest");
+		ParResponse response = parService.generateRequestUri("validRequest", cnf);
 
 		// Verify
 		assertNotNull(response);
@@ -87,10 +90,11 @@ class ParServiceTest {
 		JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder().subject("test").issueTime(new Date())
 				.jwtID(UUID.randomUUID().toString()).jwtID("abc123").build();
 		when(parRequestJwtUtil.parse(anyString())).thenReturn(jwtClaimsSet);
-
+		Cnf cnf = mock(Cnf.class);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class, () -> parService.generateRequestUri("missingParameterRequest"));
+		assertThrows(IllegalArgumentException.class,
+				() -> parService.generateRequestUri("missingParameterRequest", cnf));
 		
 	}
 
@@ -98,9 +102,9 @@ class ParServiceTest {
 	void testGenerateRequestUri_parseError() throws ParseException, JOSEException {
 		// Mock ParRequestJwtUtil
 		when(parRequestJwtUtil.parse(anyString())).thenThrow(new ParseException("Parse Error", 0));
-
+		Cnf cnf = mock(Cnf.class);
 		// Test and Verify
-		assertThrows(RuntimeException.class, () -> parService.generateRequestUri("parseErrorRequest"));
+		assertThrows(RuntimeException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf));
 	}
 }
 

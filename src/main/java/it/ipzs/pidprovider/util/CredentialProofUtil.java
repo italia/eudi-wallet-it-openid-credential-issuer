@@ -32,9 +32,14 @@ public class CredentialProofUtil {
 
 	}
 
-	public String getKid(String dpop) throws ParseException {
-		SignedJWT jwt = SignedJWT.parse(dpop);
+	public String getKid(String proof) throws ParseException {
+		SignedJWT jwt = SignedJWT.parse(proof);
 		return jwt.getHeader().getKeyID();
+	}
+
+	public String getIssuer(String proof) throws ParseException {
+		SignedJWT jwt = SignedJWT.parse(proof);
+		return jwt.getJWTClaimsSet().getIssuer();
 	}
 
 }

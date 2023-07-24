@@ -57,6 +57,7 @@ public class CredentialService {
 			throws JOSEException, ParseException, NoSuchAlgorithmException {
 
 		String kid = proofUtil.getKid(proof.getJwt());
+		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
 
 		// FIXME test data
 		Disclosure nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
@@ -107,7 +108,7 @@ public class CredentialService {
 		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", ev);
 
 		SDJWT sdjwt = new SDJWT(
-				sdJwtUtil.generateCredential(kid, vc),
+				sdJwtUtil.generateCredential(sessionInfo, kid, vc),
 				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
 						taxClaim),
 				sdJwtUtil.generateKeyBindingJwt(nonce, kid));

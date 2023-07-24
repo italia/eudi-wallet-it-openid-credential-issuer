@@ -31,21 +31,24 @@ public class ParService {
 		return UUID.randomUUID().toString();
 	}
 
-	public void validateClientAssertion(String clientAssertion) {
+	public Object validateClientAssertionAndRetrieveCnf(String clientAssertion) {
 		// TODO validate wallet instance
 		try {
-			walletInstanceUtil.parse(clientAssertion);
+			JWTClaimsSet parse = walletInstanceUtil.parse(clientAssertion);
+			return parse.getClaim("cnf");
 		} catch (ParseException | JOSEException e) {
 			log.error("", e);
+			throw new RuntimeException(e);
 		}
 
 	}
 
-	public ParResponse generateRequestUri(String request) {
+	public ParResponse generateRequestUri(String request, Object cnf) {
 		try {
 			JWTClaimsSet jwtClaimsSet = parRequestUtil.parse(request);
 
 			SessionInfo si = new SessionInfo();
+			si.setCnf(cnf);
 			Object redirectUri = jwtClaimsSet.getClaim("redirect_uri");
 			if (redirectUri != null)
 				si.setRedirectUri((String) redirectUri);
@@ -81,5 +84,4 @@ public class ParService {
 		}
 
 	}
-
 }

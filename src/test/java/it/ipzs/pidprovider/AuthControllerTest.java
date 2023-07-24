@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import it.ipzs.pidprovider.controller.AuthController;
+import it.ipzs.pidprovider.dto.Cnf;
 import it.ipzs.pidprovider.dto.ParResponse;
 import it.ipzs.pidprovider.service.ParService;
 
@@ -31,9 +32,12 @@ class AuthControllerTest {
 		String requestUri = "https://pid-provider.example.org/as/par/1234567890";
 		ParResponse parResponse = new ParResponse();
 		parResponse.setRequestUri(requestUri);
-		when(parService.generateRequestUri(request)).thenReturn(parResponse);
+		Cnf cnf = mock(Cnf.class);
+		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
+		when(parService.generateRequestUri(request, cnf)).thenReturn(parResponse);
 
-		ResponseEntity<ParResponse> response = authController.parRequest(null, null, null, null, null, null, request);
+		ResponseEntity<ParResponse> response = authController.parRequest(null, null, null, null, null,
+				"some valid client assertion", request);
 
 		assertEquals(HttpStatus.CREATED, response.getStatusCode());
 		assertEquals(parResponse, response.getBody());
@@ -42,10 +46,12 @@ class AuthControllerTest {
 	@Test
 	void testParRequestFailure() {
 		String request = "some invalid request";
-		when(parService.generateRequestUri(request)).thenThrow(new IllegalArgumentException("Invalid request"));
+		Cnf cnf = mock(Cnf.class);
+		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
+		when(parService.generateRequestUri(request, cnf)).thenThrow(new IllegalArgumentException("Invalid request"));
 
 
 		assertThatIllegalArgumentException().isThrownBy(() -> // when
-		authController.parRequest(null, null, null, null, null, null, request));
+		authController.parRequest(null, null, null, null, null, "some valid client assertion", request));
 	}
 }

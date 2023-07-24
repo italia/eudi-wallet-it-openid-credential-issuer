@@ -29,6 +29,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.ipzs.pidprovider.dto.VerifiedClaims;
+import it.ipzs.pidprovider.model.SessionInfo;
 
 @Component
 public class SdJwtUtil {
@@ -61,7 +62,7 @@ public class SdJwtUtil {
 		return jwt.serialize();
 	}
 
-	public String generateCredential(String kid, VerifiedClaims vc)
+	public String generateCredential(SessionInfo sessionInfo, String kid, VerifiedClaims vc)
 			throws JOSEException, NoSuchAlgorithmException {
 
 		// TODO implement trust chain
@@ -77,21 +78,11 @@ public class SdJwtUtil {
 		gen.initialize(2048);
 		KeyPair keyPair = gen.generateKeyPair();
 
+
 		JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
 				.privateKey((RSAPrivateKey) keyPair.getPrivate()).keyUse(KeyUse.SIGNATURE).keyID(kid)
 				.issueTime(new Date()).keyIDFromThumbprint().build();
 
-
-		Cnf cnf = new Cnf();
-		JWKDto jwkdto = new JWKDto();
-
-		jwkdto.setKid(jwk.getKeyID());
-		jwkdto.setKty(jwk.getKeyType().getValue());
-		jwkdto.setUse(jwk.getKeyUse().getValue());
-		jwkdto.setN(jwk.toJSONObject().get("n").toString());
-		jwkdto.setE(jwk.toJSONObject().get("e").toString());
-
-		cnf.setJwk(jwkdto);
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.issueTime(new Date())
 				.issuer("http://localhost:8080")
@@ -102,7 +93,7 @@ public class SdJwtUtil {
 				.claim("_sd_alg", "sha-256")
 				.claim("status", "http://localhost:8080/status")
 				.claim("type", "PersonIdentificationData")
-				.claim("cnf", cnf)
+				.claim("cnf", sessionInfo.getCnf())
 				.build();
 
 		SignedJWT jwt = new SignedJWT(header, claimsSet);
@@ -115,64 +106,4 @@ public class SdJwtUtil {
 		return jwt.serialize();
 	}
 
-}
-
-class Cnf {
-	private JWKDto jwk;
-
-	public JWKDto getJwk() {
-		return jwk;
-	}
-
-	public void setJwk(JWKDto jwk) {
-		this.jwk = jwk;
-	}
-}
-
-class JWKDto {
-	private String kty;
-	private String use;
-	private String n;
-	private String e;
-	private String kid;
-
-	public String getKty() {
-		return kty;
-	}
-
-	public void setKty(String kty) {
-		this.kty = kty;
-	}
-
-	public String getUse() {
-		return use;
-	}
-
-	public void setUse(String use) {
-		this.use = use;
-	}
-
-	public String getN() {
-		return n;
-	}
-
-	public void setN(String n) {
-		this.n = n;
-	}
-
-	public String getE() {
-		return e;
-	}
-
-	public void setE(String e) {
-		this.e = e;
-	}
-
-	public String getKid() {
-		return kid;
-	}
-
-	public void setKid(String kid) {
-		this.kid = kid;
-	}
 }

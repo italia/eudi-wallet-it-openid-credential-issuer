@@ -61,9 +61,17 @@ public class AuthController {
 			@FormParam("client_assertion_type") String client_assertion_type,
 			@FormParam("client_assertion") String client_assertion, @FormParam("request") String request) {
 
+		log.trace("/as/par params: response_type {} - code_challenge_method {} - client_assertion_type {}",
+				response_type, code_challenge_method, client_assertion_type);
+		log.trace("-> client_id {}", client_id);
+		log.trace("-> code_challenge {}", code_challenge);
+		log.trace("-> client_assertion {}", client_assertion);
+		log.trace("-> request {}", request);
+
 		// TODO check validity client assertion
-		parService.validateClientAssertion(client_assertion);
-		ParResponse response = parService.generateRequestUri(request);
+		Object cnf = parService.validateClientAssertionAndRetrieveCnf(client_assertion);
+		ParResponse response = parService.generateRequestUri(request, cnf);
+		log.trace("par response: {}", response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
@@ -71,10 +79,13 @@ public class AuthController {
 	public ResponseEntity<?> authorize(@RequestParam("client_id") String client_id,
 			@RequestParam("request_uri") String request_uri) {
 
+		log.trace("/authorize params: client_id {} - request_uri {}", client_id, request_uri);
 		// TODO eIDAS LoA High
 		String stateParam = authService.retrieveStateParam(client_id, request_uri);
+		String uri = redirectUrl.concat("?state=").concat(stateParam);
+		log.trace("authorize response: {}", uri);
 		return ResponseEntity.status(HttpStatus.FOUND)
-				.location(URI.create(redirectUrl.concat("?state=").concat(stateParam))).build();
+				.location(URI.create(uri)).build();
 	}
 
 	@GetMapping("/callback")
@@ -94,6 +105,7 @@ public class AuthController {
 		}
 		String uri = si.getRedirectUri().concat("?code=").concat(si.getCode())
 				.concat("&state=").concat(state).concat("&iss=https%3A%2F%2Fpid-provider.example.org");
+		log.trace("callback response: {}", uri);
 		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(uri)).build();
 	}
 
@@ -104,6 +116,15 @@ public class AuthController {
 			@FormParam("client_assertion_type") String client_assertion_type,
 			@FormParam("client_assertion") String client_assertion, @FormParam("redirect_uri") String redirect_uri,
 			@RequestHeader("DPoP") String dpop) throws JOSEException, ParseException {
+
+		log.trace("/token params: grant_type {} - client_assertion_type {}", grant_type, client_assertion_type);
+		log.trace("-> client_id {}", client_id);
+		log.trace("-> code_verifier {}", code_verifier);
+		log.trace("-> client_assertion {}", client_assertion);
+		log.trace("-> redirect_uri {}", redirect_uri);
+		log.trace("-> code_verifier {}", code_verifier);
+		log.trace("-> code {}", code);
+		log.trace("-> DPoP header {}", dpop);
 
 		try {
 			tokenService.checkDpop(dpop);
@@ -118,6 +139,7 @@ public class AuthController {
 			// TODO return error message code after integration
 		}
 		TokenResponse response = tokenService.generateTokenResponse(client_id, dpop);
+		log.trace("token response: {}", response);
 		return ResponseEntity.ok(response);
 	}
 
@@ -127,6 +149,11 @@ public class AuthController {
 			@FormParam("proof") String proof,
 			@RequestHeader("DPoP") String dpop, @RequestHeader("Authorization") String authorization)
 			throws JOSEException, ParseException {
+
+		log.trace("/credential params: credential_definition {} - format {}", credential_definition, format);
+		log.trace("-> proof {}", proof);
+		log.trace("-> DPoP header {}", dpop);
+		log.trace("-> Authorization header {}", authorization);
 
 		ProofRequest proofReq = null;
 		try {
@@ -150,6 +177,7 @@ public class AuthController {
 		CredentialResponse response;
 		try {
 			response = credentialService.generateSdCredentialResponse(proofReq);
+			log.trace("credential response: {}", response);
 			return ResponseEntity.ok(response);
 		} catch (NoSuchAlgorithmException | JOSEException e) {
 			log.error("", e);
