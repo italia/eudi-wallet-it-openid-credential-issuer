@@ -80,9 +80,9 @@ public class CredentialService {
 		RecordDto rec = new RecordDto();
 		rec.setType("eidas.it.cie");
 		SourceDto src = new SourceDto();
-		src.setCountryCode("IT");
-		src.setOrganizationId("m_it");
-		src.setOrganizationName("Ministero dell'Interno");
+		src.setCountry_code("IT");
+		src.setOrganization_id("m_it");
+		src.setOrganization_name("Ministero dell'Interno");
 
 		rec.setSource(src);
 
@@ -110,8 +110,7 @@ public class CredentialService {
 		SDJWT sdjwt = new SDJWT(
 				sdJwtUtil.generateCredential(sessionInfo, kid, vc),
 				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
-						taxClaim),
-				sdJwtUtil.generateKeyBindingJwt(nonce, kid));
+						taxClaim));
 
 		return sdjwt.toString();
 	}
