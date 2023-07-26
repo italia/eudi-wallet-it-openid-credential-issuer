@@ -48,7 +48,7 @@ public class SdJwtUtil {
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256).type(new JOSEObjectType("kb+jwt")).build();
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issueTime(new Date())
-				.audience(List.of("http://localhost:8080")).claim("nonce", nonce).build();
+				.audience(List.of("https://api.eudi-wallet-it-pid-provider.it")).claim("nonce", nonce).build();
 
 
 		SignedJWT jwt = new SignedJWT(header, claimsSet);
@@ -85,13 +85,13 @@ public class SdJwtUtil {
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.issueTime(new Date())
-				.issuer("http://localhost:8080")
+				.issuer("https://api.eudi-wallet-it-pid-provider.it")
 				.subject(jwk.computeThumbprint().toString())
 				.jwtID("urn:uuid:".concat(UUID.randomUUID().toString()))
 				.expirationTime(new Date(new Date().getTime() + 86400 * 1000))
 				.claim("verified_claims", vc)
 				.claim("_sd_alg", "sha-256")
-				.claim("status", "http://localhost:8080/status")
+				.claim("status", "https://api.eudi-wallet-it-pid-provider.it/status") //TODO implementation
 				.claim("type", "PersonIdentificationData")
 				.claim("cnf", sessionInfo.getCnf())
 				.build();

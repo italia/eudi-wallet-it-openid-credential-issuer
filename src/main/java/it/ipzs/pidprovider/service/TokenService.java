@@ -63,8 +63,8 @@ public class TokenService {
 				.subject("sub_pairwise")
 				.issueTime(new Date())
 				.jwtID(UUID.randomUUID().toString())
-				.audience("https://localhost/token") // TODO must match client_id
-				.claim("client_id", "https://localhost/token") // TODO https url that identifies RP
+				.audience("https://api.eudi-wallet-it-pid-provider.it/token") // TODO must match client_id
+				.claim("client_id", "https://api.eudi-wallet-it-pid-provider.it/token") // TODO https url that identifies RP
 				.claim("nonce", nonce)
 				.claim("jkt", jkt)
 				.expirationTime(new Date(new Date().getTime() + 3600 * 1000)) // TODO config expiration time

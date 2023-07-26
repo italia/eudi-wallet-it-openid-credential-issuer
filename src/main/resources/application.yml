@@ -14,11 +14,11 @@ springdoc:
   paths-to-exclude:
   - /cie/**
 auth-controller:
-  redirect-url: http://localhost:8080/cie/login
+  redirect-url: https://api.eudi-wallet-it-pid-provider.it/cie/login
 consent-controller:
-  consent-url: http://localhost:8080/cie/consent
-  accepted-url: http://localhost:8080/cie/accepted
-  callback-url: http://localhost:8080/callback
+  consent-url: https://api.eudi-wallet-it-pid-provider.it/cie/consent
+  accepted-url: https://api.eudi-wallet-it-pid-provider.it/cie/accepted
+  callback-url: https://api.eudi-wallet-it-pid-provider.it/callback
 logging:
   level:
     '[it.ipzs.pidprovider.controller.AuthController]': WARN  
