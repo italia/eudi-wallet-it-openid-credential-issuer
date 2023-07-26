@@ -58,6 +58,9 @@ public class CredentialService {
 
 		String kid = proofUtil.getKid(proof.getJwt());
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
+		if (sessionInfo == null) {
+			throw new RuntimeException("No client id known found");
+		}
 
 		// FIXME test data
 		Disclosure nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
@@ -96,23 +99,20 @@ public class CredentialService {
 		builder.putSDClaim(taxClaim);
 		builder.putSDClaim(uniqueIdClaim);
 
-		SDObjectBuilder evbuilder = new SDObjectBuilder();
-		evbuilder.putSDClaim("verification", ev);
-		ver.set_sd(evbuilder.build().get("_sd"));
-
-
+		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", List.of(ev));
+		ver.set_sd(evDisclosure.digest());
 
 		vc.setClaims(builder.build());
 		vc.setVerification(ver);
-
-		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", ev);
 
 		SDJWT sdjwt = new SDJWT(
 				sdJwtUtil.generateCredential(sessionInfo, kid, vc),
 				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
 						taxClaim));
 
-		return sdjwt.toString();
+		String sdJwtString = sdjwt.toString();
+		// remove last tilde for SD-JWT draft 4 compliance
+		return sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
 	}
 
 	public void checkDpop(String dpop) {

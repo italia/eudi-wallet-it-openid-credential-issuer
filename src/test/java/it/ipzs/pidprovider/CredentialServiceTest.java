@@ -72,6 +72,8 @@ class CredentialServiceTest {
 		when(sdJwtUtil.generateGenericDisclosure(anyString(), any())).thenReturn(new Disclosure("test", "abc"));
 
 		ProofRequest proofClaims = mock(ProofRequest.class);
+		SessionInfo si = mock(SessionInfo.class);
+		when(sessionUtil.getSessionInfo(any())).thenReturn(si);
 		// Test
 		CredentialResponse response = credentialService.generateSdCredentialResponse(proofClaims);
 
