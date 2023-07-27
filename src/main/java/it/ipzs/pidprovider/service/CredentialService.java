@@ -20,7 +20,6 @@ import it.ipzs.pidprovider.dto.PlaceOfBirthDto;
 import it.ipzs.pidprovider.dto.ProofRequest;
 import it.ipzs.pidprovider.dto.RecordDto;
 import it.ipzs.pidprovider.dto.SourceDto;
-import it.ipzs.pidprovider.dto.VerificationDto;
 import it.ipzs.pidprovider.dto.VerifiedClaims;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.AccessTokenUtil;
@@ -74,9 +73,6 @@ public class CredentialService {
 
 		VerifiedClaims vc = new VerifiedClaims();
 
-		VerificationDto ver = new VerificationDto();
-		ver.setAssurance_level("high");
-		ver.setTrust_framework("eidas");
 		EvidenceDto ev = new EvidenceDto();
 		ev.setType("electronic_record");
 
@@ -99,11 +95,15 @@ public class CredentialService {
 		builder.putSDClaim(taxClaim);
 		builder.putSDClaim(uniqueIdClaim);
 
+
+		SDObjectBuilder evBuilder = new SDObjectBuilder();
+		evBuilder.putClaim("assurance_level", "high");
+		evBuilder.putClaim("trust_framework", "eidas");
 		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", List.of(ev));
-		ver.set_sd(evDisclosure.digest());
+		evBuilder.putSDClaim(evDisclosure);
 
 		vc.setClaims(builder.build());
-		vc.setVerification(ver);
+		vc.setVerification(evBuilder.build());
 
 		SDJWT sdjwt = new SDJWT(
 				sdJwtUtil.generateCredential(sessionInfo, kid, vc),
