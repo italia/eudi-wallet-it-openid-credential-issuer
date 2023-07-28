@@ -19,6 +19,3 @@ consent-controller:
   consent-url: https://api.eudi-wallet-it-pid-provider.it/cie/consent
   accepted-url: https://api.eudi-wallet-it-pid-provider.it/cie/accepted
   callback-url: https://api.eudi-wallet-it-pid-provider.it/callback
-logging:
-  level:
-    '[it.ipzs.pidprovider.controller.AuthController]': WARN  

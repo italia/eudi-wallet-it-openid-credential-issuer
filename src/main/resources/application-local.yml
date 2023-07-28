@@ -4,6 +4,3 @@ consent-controller:
   consent-url: http://localhost:8080/cie/consent
   accepted-url: http://localhost:8080/cie/accepted
   callback-url: http://localhost:8080/callback
-logging:
-  level:
-    '[it.ipzs.pidprovider.controller.AuthController]': TRACE  

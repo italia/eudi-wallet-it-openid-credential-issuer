@@ -23,6 +23,10 @@ In this release there is a mock authentication: the credentials are `user`/`pass
   
 - Verify the successful accessibility of the [swagger](http://localhost:8080/swagger-ui/index.html) endpoint
 
+## Docker Hub Repository
+
+[EUDI IT Wallet Pid Provider - Docker Hub Image Repository](https://hub.docker.com/r/ipzssviluppo/eudi-it-wallet-pid-provider)
+
 
 # License: 
 Apache License Version 2.0
