@@ -19,9 +19,9 @@ In this release there is a mock authentication: the credentials are `user`/`pass
 
 - Launch a container using the newly created image (where -p EXT_PORT:INT_PORT maps the internal port - to be consistent with the one specified in the YAML file with the Docker profile - and exposes it to a port of our choice).
 
-  `docker run -p 8080:8080 eudi-it-wallet-pid-provider`
+  `docker run -p 8443:8443 eudi-it-wallet-pid-provider`
   
-- Verify the successful accessibility of the [swagger](http://localhost:8080/swagger-ui/index.html) endpoint
+- Verify the successful accessibility of the [swagger](http://localhost:8443/swagger-ui/index.html) endpoint
 
 ## Docker Hub Repository
 
