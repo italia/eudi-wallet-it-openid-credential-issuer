@@ -27,6 +27,9 @@ In this release there is a mock authentication: the credentials are `user`/`pass
 
 [EUDI IT Wallet Pid Provider - Docker Hub Image Repository](https://hub.docker.com/r/ipzssviluppo/eudi-it-wallet-pid-provider)
 
+# Updates
+
+v.1.1.2 - updated Spring Boot to v.3.1.2 - fixed security issues - fixed bug with kid claim in sd-jwt
 
 # License: 
 Apache License Version 2.0

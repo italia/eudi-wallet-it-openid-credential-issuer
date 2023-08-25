@@ -1,6 +1,5 @@
 package it.ipzs.pidprovider.service;
 
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Objects;
@@ -45,7 +44,7 @@ public class CredentialService {
 
 
 	public CredentialResponse generateSdCredentialResponse(ProofRequest proof)
-			throws JOSEException, ParseException, NoSuchAlgorithmException {
+			throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
 		return CredentialResponse.builder().format("vc+sd-jwt")
 				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(proof, nonce)).build();
@@ -53,9 +52,8 @@ public class CredentialService {
 	}
 
 	private String generateSdJwtCredential(ProofRequest proof, String nonce)
-			throws JOSEException, ParseException, NoSuchAlgorithmException {
+			throws JOSEException, ParseException {
 
-		String kid = proofUtil.getKid(proof.getJwt());
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
 		if (sessionInfo == null) {
 			throw new RuntimeException("No client id known found");
@@ -106,7 +104,7 @@ public class CredentialService {
 		vc.setVerification(evBuilder.build());
 
 		SDJWT sdjwt = new SDJWT(
-				sdJwtUtil.generateCredential(sessionInfo, kid, vc),
+				sdJwtUtil.generateCredential(sessionInfo, vc),
 				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
 						taxClaim));
 

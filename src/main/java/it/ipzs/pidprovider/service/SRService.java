@@ -2,7 +2,7 @@ package it.ipzs.pidprovider.service;
 
 import java.security.SecureRandom;
 
-import org.apache.tomcat.util.codec.binary.Base64;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 
 @Service

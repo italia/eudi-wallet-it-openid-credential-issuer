@@ -1,10 +1,6 @@
 package it.ipzs.pidprovider.util;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.authlete.sd.Disclosure;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -22,17 +19,21 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.ipzs.pidprovider.config.KeyStoreConfig;
+import it.ipzs.pidprovider.dto.Cnf;
 import it.ipzs.pidprovider.dto.VerifiedClaims;
 import it.ipzs.pidprovider.model.SessionInfo;
+import lombok.AllArgsConstructor;
 
 @Component
+@AllArgsConstructor
 public class SdJwtUtil {
+
+	private final KeyStoreConfig ksConfig;
 
 	public Disclosure generateGenericDisclosure(String salt, String claimName, Object claimValueObject) {
 		return new Disclosure(salt, claimName, claimValueObject);
@@ -62,36 +63,34 @@ public class SdJwtUtil {
 		return jwt.serialize();
 	}
 
-	public String generateCredential(SessionInfo sessionInfo, String kid, VerifiedClaims vc)
-			throws JOSEException, NoSuchAlgorithmException {
+	public String generateCredential(SessionInfo sessionInfo, VerifiedClaims vc) throws JOSEException {
 
 		// TODO implement trust chain
 
+		JWK jwk = ksConfig.getKey();
 		List<String> localTrustChain = List.of(
 				"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwaWQtcHJvdmlkZXIiLCJpYXQiOjE2ODc3MDQzNjgsImV4cCI6MTc4Nzc0MDM2OH0.ZEE7hkHVCPwXGgo7035865YZl2MTf4o05NUTTQ-LRXc",
 				"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0cnVzdC1yZWdpc3RyeSIsImlhdCI6MTY4NzcwNDM2OCwiZXhwIjoxNzg3NzQwMzY4fQ.V-yHsWkfdCiK7trm4xLJLpdxi5LJThvzJNM_tWYzzQE");
-		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(new JOSEObjectType("vc+sd-jwt")).keyID(kid)
+		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(new JOSEObjectType("vc+sd-jwt"))
+				.keyID(jwk.getKeyID())
 				.customParam("trust_chain", localTrustChain)
 				.build();
 
-		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-		gen.initialize(2048);
-		KeyPair keyPair = gen.generateKeyPair();
 
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.YEAR, 1);
+		Date validityEndDate = cal.getTime();
 
-		JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
-				.privateKey((RSAPrivateKey) keyPair.getPrivate()).keyUse(KeyUse.SIGNATURE).keyID(kid)
-				.issueTime(new Date()).keyIDFromThumbprint().build();
-
+		String cnfKidClaim = extractKidFromCnf(sessionInfo.getCnf());
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.issueTime(new Date())
 				.issuer("https://api.eudi-wallet-it-pid-provider.it")
-				.subject(jwk.computeThumbprint().toString())
+				.subject(cnfKidClaim)
 				.jwtID("urn:uuid:".concat(UUID.randomUUID().toString()))
-				.expirationTime(new Date(new Date().getTime() + 86400 * 1000))
+				.expirationTime(validityEndDate)
 				.claim("verified_claims", vc)
 				.claim("_sd_alg", "sha-256")
-				.claim("status", "https://api.eudi-wallet-it-pid-provider.it/status") //TODO implementation
+				.claim("status", "https://api.eudi-wallet-it-pid-provider.it/status") // TODO implementation
 				.claim("type", "PersonIdentificationData")
 				.claim("cnf", sessionInfo.getCnf())
 				.build();
@@ -104,6 +103,12 @@ public class SdJwtUtil {
 		jwt.sign(signer);
 
 		return jwt.serialize();
+	}
+
+	private String extractKidFromCnf(Object cnfObj) {
+		ObjectMapper om = new ObjectMapper();
+		Cnf cnf = om.convertValue(cnfObj, Cnf.class);
+		return cnf.getJwk().getKid();
 	}
 
 }

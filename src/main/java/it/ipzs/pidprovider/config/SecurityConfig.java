@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,14 +28,13 @@ public class SecurityConfig {
 	@Bean
 	@Order(1)
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.csrf()
-        .disable()
-        .authorizeRequests()
-        .antMatchers("/cie/**")
-        .hasRole("USER")
-				.antMatchers("/login").permitAll()
-        .and()
-				.exceptionHandling().authenticationEntryPoint(new ContinueEntryPoint("/login")).and().formLogin();
+
+		http.csrf(AbstractHttpConfigurer::disable)
+				.authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests.requestMatchers("/cie/**")
+						.hasRole("USER").requestMatchers("/**").permitAll())
+				.exceptionHandling(exceptionHandling -> exceptionHandling
+						.authenticationEntryPoint(new ContinueEntryPoint("/login")))
+				.formLogin(form -> form.loginPage("/login"));
 
         return http.build();
 	}

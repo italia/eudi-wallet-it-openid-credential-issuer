@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.12</version>
-		<relativePath /> <!-- lookup parent from repository -->
+		<version>3.1.2</version>
+		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>it-pid-provider</artifactId>
-	<version>1.1.1</version>
+	<version>1.1.2</version>
 	<name>it-pid-provider</name>
 	<description>IT PID Provider</description>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
+		<snakeyaml.version>2.0</snakeyaml.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -40,15 +42,15 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+	 	<dependency>
+	      <groupId>org.springdoc</groupId>
+	      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+	      <version>2.0.0</version>
+	   </dependency>
 		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-ui</artifactId>
-			<version>1.6.6</version>
-		</dependency>
-		<dependency>
-			<groupId>com.nimbusds</groupId>
-			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.31</version>
+		    <groupId>com.nimbusds</groupId>
+		    <artifactId>nimbus-jose-jwt</artifactId>
+		    <version>9.31</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -56,21 +58,26 @@
 			<version>0.9.1</version>
 		</dependency>
 		<dependency>
-			<groupId>com.authlete</groupId>
-			<artifactId>sd-jwt</artifactId>
-			<version>1.3</version>
+		    <groupId>com.authlete</groupId>
+		    <artifactId>sd-jwt</artifactId>
+		    <version>1.3</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
+				<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20211205</version>
+		</dependency>
 		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
+		    <groupId>commons-codec</groupId>
+		    <artifactId>commons-codec</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.ws.rs</groupId>

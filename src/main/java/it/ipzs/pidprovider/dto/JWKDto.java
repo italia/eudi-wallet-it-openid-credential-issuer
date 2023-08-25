@@ -2,6 +2,9 @@ package it.ipzs.pidprovider.dto;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class JWKDto implements Serializable {
 	private static final long serialVersionUID = -2518220284619430508L;
 

@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 eclipse-temurin:11-jdk
+FROM --platform=linux/amd64 eclipse-temurin:17-jdk
 RUN adduser --system --group spring
 USER spring:spring
 ARG JAR_FILE=target/*.jar

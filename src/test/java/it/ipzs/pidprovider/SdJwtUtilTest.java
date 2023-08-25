@@ -2,6 +2,7 @@ package it.ipzs.pidprovider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 
+import it.ipzs.pidprovider.config.KeyStoreConfig;
 import it.ipzs.pidprovider.util.SdJwtUtil;
 
 class SdJwtUtilTest {
@@ -32,7 +34,8 @@ class SdJwtUtilTest {
 	@BeforeEach
 	public void setup() {
 		MockitoAnnotations.openMocks(this);
-		sdJwtUtil = new SdJwtUtil();
+		KeyStoreConfig ksConfig = mock(KeyStoreConfig.class);
+		sdJwtUtil = new SdJwtUtil(ksConfig);
 	}
 
 	@Test

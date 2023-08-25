@@ -1,13 +1,8 @@
 package it.ipzs.pidprovider.controller;
 
 import java.net.URI;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.FormParam;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -32,6 +27,9 @@ import it.ipzs.pidprovider.service.AuthorizationService;
 import it.ipzs.pidprovider.service.CredentialService;
 import it.ipzs.pidprovider.service.ParService;
 import it.ipzs.pidprovider.service.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.FormParam;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -179,7 +177,7 @@ public class AuthController {
 			response = credentialService.generateSdCredentialResponse(proofReq);
 			log.trace("credential response: {}", response);
 			return ResponseEntity.ok(response);
-		} catch (NoSuchAlgorithmException | JOSEException e) {
+		} catch (JOSEException e) {
 			log.error("", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		} catch (ParseException e) {
