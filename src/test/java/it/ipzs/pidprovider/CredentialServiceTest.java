@@ -28,6 +28,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import it.ipzs.pidprovider.dto.CredentialResponse;
 import it.ipzs.pidprovider.dto.ProofRequest;
 import it.ipzs.pidprovider.model.SessionInfo;
+import it.ipzs.pidprovider.oidclib.exception.OIDCException;
 import it.ipzs.pidprovider.service.CredentialService;
 import it.ipzs.pidprovider.service.SRService;
 import it.ipzs.pidprovider.util.AccessTokenUtil;
@@ -66,7 +67,8 @@ class CredentialServiceTest {
 	}
 
 	@Test
-	void testGenerateSdCredentialResponse() throws JOSEException, ParseException, NoSuchAlgorithmException {
+	void testGenerateSdCredentialResponse()
+			throws JOSEException, ParseException, NoSuchAlgorithmException, OIDCException {
 		// Mock SRService
 		when(srService.generateRandomByByteLength(anyInt())).thenReturn("nonce");
 		when(sdJwtUtil.generateGenericDisclosure(anyString(), any())).thenReturn(new Disclosure("test", "abc"));

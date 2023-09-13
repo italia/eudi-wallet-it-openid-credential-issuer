@@ -1,5 +1,6 @@
 package it.ipzs.pidprovider.util;
 
+import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -23,17 +24,17 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.ipzs.pidprovider.config.KeyStoreConfig;
 import it.ipzs.pidprovider.dto.Cnf;
 import it.ipzs.pidprovider.dto.VerifiedClaims;
 import it.ipzs.pidprovider.model.SessionInfo;
+import it.ipzs.pidprovider.oidclib.OidcWrapper;
 import lombok.AllArgsConstructor;
 
 @Component
 @AllArgsConstructor
 public class SdJwtUtil {
 
-	private final KeyStoreConfig ksConfig;
+	private final OidcWrapper oidcWrapper;
 
 	public Disclosure generateGenericDisclosure(String salt, String claimName, Object claimValueObject) {
 		return new Disclosure(salt, claimName, claimValueObject);
@@ -63,17 +64,16 @@ public class SdJwtUtil {
 		return jwt.serialize();
 	}
 
-	public String generateCredential(SessionInfo sessionInfo, VerifiedClaims vc) throws JOSEException {
+	public String generateCredential(SessionInfo sessionInfo, VerifiedClaims vc)
+			throws JOSEException, ParseException {
 
-		// TODO implement trust chain
 
-		JWK jwk = ksConfig.getKey();
-		List<String> localTrustChain = List.of(
-				"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwaWQtcHJvdmlkZXIiLCJpYXQiOjE2ODc3MDQzNjgsImV4cCI6MTc4Nzc0MDM2OH0.ZEE7hkHVCPwXGgo7035865YZl2MTf4o05NUTTQ-LRXc",
-				"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0cnVzdC1yZWdpc3RyeSIsImlhdCI6MTY4NzcwNDM2OCwiZXhwIjoxNzg3NzQwMzY4fQ.V-yHsWkfdCiK7trm4xLJLpdxi5LJThvzJNM_tWYzzQE");
+		JWK jwk = oidcWrapper.getCredentialIssuerJWK();
+		List<String> trustChain = oidcWrapper.getCredentialIssuerTrustChain();
+
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(new JOSEObjectType("vc+sd-jwt"))
 				.keyID(jwk.getKeyID())
-				.customParam("trust_chain", localTrustChain)
+				.customParam("trust_chain", trustChain)
 				.build();
 
 

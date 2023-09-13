@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -30,8 +31,9 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
 		http.csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests.requestMatchers("/cie/**")
-						.hasRole("USER").requestMatchers("/**").permitAll())
+				.authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
+						.requestMatchers(new AntPathRequestMatcher("/cie/**")).hasRole("USER")
+						.requestMatchers(new AntPathRequestMatcher("/**")).permitAll())
 				.exceptionHandling(exceptionHandling -> exceptionHandling
 						.authenticationEntryPoint(new ContinueEntryPoint("/login")))
 				.formLogin(form -> form.loginPage("/login"));

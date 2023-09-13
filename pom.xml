@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>it-pid-provider</artifactId>
-	<version>1.1.2</version>
+	<version>1.2.0</version>
 	<name>it-pid-provider</name>
 	<description>IT PID Provider</description>
 	<properties>
@@ -73,7 +73,7 @@
 				<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
-			<version>20211205</version>
+			<version>20230227</version>
 		</dependency>
 		<dependency>
 		    <groupId>commons-codec</groupId>
@@ -82,6 +82,21 @@
 		<dependency>
 			<groupId>jakarta.ws.rs</groupId>
 			<artifactId>jakarta.ws.rs-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>2.2.220</version>
+			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
 	<build>
