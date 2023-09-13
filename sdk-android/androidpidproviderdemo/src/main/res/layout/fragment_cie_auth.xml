@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:paddingHorizontal="@dimen/dimen_30">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/clInsertPin"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dimen_40"
+            android:text="@string/insert_your_pin_card"
+            android:textColor="@color/soft_blue"
+            android:textSize="@dimen/font_22"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dimen_7"
+            android:layout_marginBottom="@dimen/dimen_40"
+            android:gravity="start"
+            android:text="@string/pin_is_code"
+            android:textColor="@color/high_gray"
+            android:textSize="@dimen/font_18"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/title" />
+
+        <EditText
+            android:id="@+id/editTextPin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dimen_30"
+            android:hint="@string/pin"
+            android:textIsSelectable="true"
+            android:importantForAutofill="no"
+            android:inputType="textPassword"
+            android:textColor="@color/black"
+            android:backgroundTint="@color/teal_200"
+            app:layout_constraintTop_toBottomOf="@id/subtitle"
+            tools:ignore="TextFields" />
+
+        <Button
+            android:id="@+id/btContinue"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dimen_50"
+            android:layout_marginBottom="@dimen/dimen_30"
+            android:backgroundTint="@color/soft_blue"
+            android:text="@string/continue_on"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

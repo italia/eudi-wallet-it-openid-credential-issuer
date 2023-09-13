@@ -1,0 +1,67 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion 33
+
+    defaultConfig {
+        minSdkVersion 19
+        targetSdkVersion 33
+        versionCode 3
+        versionName "1.0.2"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        //ambienti
+        //PRODUZIONE
+        //buildConfigField "String", "BASE_URL_IDP", "\"https://idserver.servizicie.interno.gov.it/idp/\""
+        //PREPRODUZIONE
+        //buildConfigField "String", "BASE_URL_IDP", "\"https://preproduzione.idserver.servizicie.interno.gov.it/idp/\""
+        //COLLAUDO
+        buildConfigField "String", "BASE_URL_IDP", "\"https://collaudo.idserver.servizicie.interno.gov.it/idp/\""
+        buildConfigField "String", "BASE_URL_CERTIFICATE", "\"collaudo.idserver.servizicie.interno.gov.it\""
+        buildConfigField "String", "PIN_ROOT", "\"sha256/cGuxAXyFXFkWm61cF4HPWX8S0srS9j0aSqN0k4AP+4A=\""
+        buildConfigField "String", "PIN_LEAF", "\"sha256/aQmQCV6ngX49Y/T5Imt8jykuzmOrWGnw82wtvD9yo1g=\""
+    }
+
+    buildTypes {
+        release {
+
+        }
+        debug {
+            debuggable true
+        }
+    }
+}
+
+
+ext {
+    okhttp_version = '4.9.1'
+    retrofit_version = '2.9.0'
+    kotlin_version = '1.5.10'
+}
+
+dependencies {
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    //network
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
+    implementation "com.squareup.retrofit2:converter-scalars:$retrofit_version"
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version"
+    implementation 'com.squareup.okio:okio:2.9.0'
+    implementation "com.squareup.retrofit2:converter-moshi:2.9.0"
+    //tsl
+    implementation 'com.google.android.gms:play-services-auth:19.2.0'
+
+    //rxjava
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.21'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+
+    implementation "com.madgag.spongycastle:core:1.58.0.0"
+    implementation "com.madgag.spongycastle:bcpkix-jdk15on:1.58.0.0"
+
+
+}
+
