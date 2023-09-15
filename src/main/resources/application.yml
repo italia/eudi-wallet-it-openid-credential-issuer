@@ -1,0 +1,82 @@
+spring:
+  application:
+    name: qeaa-issuer
+  output:
+    ansi:
+      enabled: ALWAYS
+server:
+  forward-headers-strategy: framework
+springdoc:
+  cache:
+   disabled: true
+  packages-to-scan:
+  - it.ipzs.qeeaissuer.controller
+  paths-to-exclude:
+  - /cie/**
+auth-controller:
+  redirect-url: https://api.eudi-wallet-it-pid-provider.it/cie/login
+consent-controller:
+  consent-url: https://api.eudi-wallet-it-pid-provider.it/cie/consent
+  accepted-url: https://api.eudi-wallet-it-pid-provider.it/cie/accepted
+  callback-url: https://api.eudi-wallet-it-pid-provider.it/callback
+logging:
+  level:
+    '[it.ipzs.qeeaissuer.controller.AuthController]': WARN
+keys:
+  directory-path: ${user.home}/key
+  path: ${keys.directory-path}/eudi-pp-key-jwk.json
+  public-jwk-set-path: ${keys.directory-path}/eudi-pp-public-jwk.json
+oidc:
+   hosts:
+      trust-anchor: 127.0.0.1
+      cie-provider: 127.0.0.1
+      relying-party: 127.0.0.1
+
+      
+   # required for onboarding checks and also for all the leafs
+   default-trust-anchor: "http://${oidc.hosts.trust-anchor}:8000/"
+
+   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://api.eudi-wallet-it-pid-provider.it/ci"
+
+   # List of trust anchors
+   trust-anchors:
+   - ${oidc.default-trust-anchor}
+
+   # Map of known OPs and related Trust Anchor.
+   spid-providers:
+     - subject: "http://${oidc.hosts.trust-anchor}:8000/oidc/op/"
+       trust-anchor: ${oidc.default-trust-anchor}
+   cie-providers:
+     - subject: "http://${oidc.hosts.cie-provider}:8002/oidc/op/"
+       trust-anchor: ${oidc.default-trust-anchor}
+
+   relying-party:
+      application-name: "SpringBoot RP Sample"
+      application-type: "web"
+      contacts:
+      - "dev@example.com"
+      #response-types  only "code" allowed
+      scope:
+      - openid
+      - offline_access
+      token-endpoint-auth-method: 
+      - private_key_jwt
+      client-id: "http://${oidc.hosts.relying-party}:8080/ci"
+      redirect-uris:
+      - "http://${oidc.hosts.relying-party}:8080/callback"
+      jwk-file-path: ${user.home}/oidc-rp-jwk.json
+      trust-marks-file-path: ${user.home}/oidc-rp-trust-marks.json
+
+   openid-credential-issuer:
+      credential-issuer: 127.0.0.1:8080
+      dpop-signing-alg-values-supported:
+      - RS256
+      authorization-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/authorize"
+      token-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/token"
+      pushed-authorization-request-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/as/par"
+      credential-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/credential"
+      jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
+      sub: "http://${oidc.hosts.relying-party}:8080/ci"
+     
+metadata:
+  path: ${user.home}/metadata.json
