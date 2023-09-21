@@ -77,7 +77,7 @@ class CredentialServiceTest {
 		SessionInfo si = mock(SessionInfo.class);
 		when(sessionUtil.getSessionInfo(any())).thenReturn(si);
 		// Test
-		CredentialResponse response = credentialService.generateSdCredentialResponse(proofClaims);
+		CredentialResponse response = credentialService.generateSdCredentialResponse(null, proofClaims);
 
 		// Verify
 		assertNotNull(response);

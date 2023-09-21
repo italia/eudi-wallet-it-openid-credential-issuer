@@ -22,31 +22,31 @@ import com.nimbusds.jwt.SignedJWT;
 @Component
 public class DpopUtil {
 
-    private static final String TYPE_HEADER = "dpop+jwt";
-    private static final String JTI_CLAIM = "jti";
-    private static final String HTM_CLAIM = "htm";
-    private static final String HTU_CLAIM = "htu";
-    private static final String IAT_CLAIM = "iat";
+	private static final String TYPE_HEADER = "dpop+jwt";
+	private static final String JTI_CLAIM = "jti";
+	private static final String HTM_CLAIM = "htm";
+	private static final String HTU_CLAIM = "htu";
+	private static final String IAT_CLAIM = "iat";
 
-    
+
 	public JWTClaimsSet parse(String dpop) throws ParseException, JOSEException {
 		SignedJWT jwt = SignedJWT.parse(dpop);
 
 		JWSHeader jwsHeader = jwt.getHeader();
 		validateHeader(jwsHeader);
 		JWK jwk = jwsHeader.getJWK();
-		
+
 		JWSVerifier verifier;
-		 if (jwk instanceof ECKey) {
-				ECKey ecKey = (ECKey) jwk;
-	            verifier = new ECDSAVerifier(ecKey);
-			} else if (jwk instanceof RSAKey) {
-				RSAKey rsaKey = (RSAKey) jwk;
-	            verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
-			} else {
-				throw new IllegalArgumentException("JWK key type not matched: " + jwk.getKeyType().getValue());
-	        }
-		
+		if (jwk instanceof ECKey) {
+			ECKey ecKey = (ECKey) jwk;
+			verifier = new ECDSAVerifier(ecKey);
+		} else if (jwk instanceof RSAKey) {
+			RSAKey rsaKey = (RSAKey) jwk;
+			verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
+		} else {
+			throw new IllegalArgumentException("JWK key type not matched: " + jwk.getKeyType().getValue());
+		}
+
 		jwt.verify(verifier);
 		validateClaims(jwt.getJWTClaimsSet());
 
@@ -103,6 +103,11 @@ public class DpopUtil {
 	public String getKid(String dpop) throws ParseException {
 		SignedJWT jwt = SignedJWT.parse(dpop);
 		return jwt.getHeader().getKeyID();
+	}
+
+	public JWK getJwk(String dpop) throws ParseException {
+		SignedJWT jwt = SignedJWT.parse(dpop);
+		return jwt.getHeader().getJWK();
 	}
 
 }

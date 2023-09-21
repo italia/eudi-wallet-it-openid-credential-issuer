@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.nimbusds.jose.jwk.JWK;
 import org.springframework.stereotype.Service;
 
 import com.authlete.sd.Disclosure;
@@ -43,15 +44,15 @@ public class CredentialService {
 
 
 
-	public CredentialResponse generateSdCredentialResponse(ProofRequest proof)
+	public CredentialResponse generateSdCredentialResponse(String dpop, ProofRequest proof)
 			throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
 		return CredentialResponse.builder().format("vc+sd-jwt")
-				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(proof, nonce)).build();
+				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(dpop, proof, nonce)).build();
 
 	}
 
-	private String generateSdJwtCredential(ProofRequest proof, String nonce)
+	private String generateSdJwtCredential(String dpop, ProofRequest proof, String nonce)
 			throws JOSEException, ParseException {
 
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
@@ -59,6 +60,7 @@ public class CredentialService {
 			throw new RuntimeException("No client id known found");
 		}
 
+		JWK jwk = dpopUtil.getJwk(dpop);
 		// FIXME test data
 		Disclosure nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
 		Disclosure familyClaim = sdJwtUtil.generateGenericDisclosure("family_name", "Rossi");
@@ -104,7 +106,7 @@ public class CredentialService {
 		vc.setVerification(evBuilder.build());
 
 		SDJWT sdjwt = new SDJWT(
-				sdJwtUtil.generateCredential(sessionInfo, vc),
+				sdJwtUtil.generateCredential(vc, jwk),
 				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
 						taxClaim));
 

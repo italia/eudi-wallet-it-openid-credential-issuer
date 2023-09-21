@@ -174,7 +174,7 @@ public class AuthController {
 		}
 		CredentialResponse response;
 		try {
-			response = credentialService.generateSdCredentialResponse(proofReq);
+			response = credentialService.generateSdCredentialResponse(dpop, proofReq);
 			log.trace("credential response: {}", response);
 			return ResponseEntity.ok(response);
 		} catch (JOSEException e) {
