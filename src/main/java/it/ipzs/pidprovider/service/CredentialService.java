@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import com.nimbusds.jose.jwk.JWK;
 import org.springframework.stereotype.Service;
 
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.pidprovider.dto.CredentialResponse;
@@ -77,10 +77,10 @@ public class CredentialService {
 		ev.setType("electronic_record");
 
 		RecordDto rec = new RecordDto();
-		rec.setType("eidas.it.cie");
+		rec.setType("https://eudi.wallet.cie.gov.it");
 		SourceDto src = new SourceDto();
 		src.setCountry_code("IT");
-		src.setOrganization_id("m_it");
+		src.setOrganization_id("urn:eudi:it:organization_id:ipa_code:m_it");
 		src.setOrganization_name("Ministero dell'Interno");
 
 		rec.setSource(src);
