@@ -30,4 +30,9 @@ public class SessionUtil {
 	public void removeSessionInfo(SessionInfo sessionInfo) {
 		sessionMap.remove(sessionInfo.getClientId());
 	}
+
+	public SessionInfo getSessionInfoByHashedWia(String hashedWia) {
+		return sessionMap.values().stream().filter(si -> si.getHashedWia().equals(hashedWia)).findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("No hashed Wallet Instance Attestation found"));
+	}
 }

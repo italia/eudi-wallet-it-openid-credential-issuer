@@ -34,7 +34,7 @@ class AuthControllerTest {
 		parResponse.setRequestUri(requestUri);
 		Cnf cnf = mock(Cnf.class);
 		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
-		when(parService.generateRequestUri(request, cnf)).thenReturn(parResponse);
+		when(parService.generateRequestUri(request, cnf, requestUri)).thenReturn(parResponse);
 
 		ResponseEntity<ParResponse> response = authController.parRequest(null, null, null, null, null,
 				"some valid client assertion", request);
@@ -48,7 +48,8 @@ class AuthControllerTest {
 		String request = "some invalid request";
 		Cnf cnf = mock(Cnf.class);
 		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
-		when(parService.generateRequestUri(request, cnf)).thenThrow(new IllegalArgumentException("Invalid request"));
+		when(parService.generateRequestUri(request, cnf, request))
+				.thenThrow(new IllegalArgumentException("Invalid request"));
 
 
 		assertThatIllegalArgumentException().isThrownBy(() -> // when

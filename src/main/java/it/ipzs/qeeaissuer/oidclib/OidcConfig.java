@@ -116,6 +116,7 @@ public class OidcConfig extends BaseConfig {
 		this.federationTrustChainUrl = federationTrustChainUrl;
 	}
 
+
 	public static class Hosts extends BaseConfig {
 
 		public String getTrustAnchor() {
@@ -283,6 +284,14 @@ public class OidcConfig extends BaseConfig {
 			return json;
 		}
 
+		public String getEncrJwkFilePath() {
+			return encrJwkFilePath;
+		}
+
+		public void setEncrJwkFilePath(String encrJwkFilePath) {
+			this.encrJwkFilePath = encrJwkFilePath;
+		}
+
 		private String applicationName;
 		private String applicationType;
 		private Set<String> contacts = new HashSet<>();
@@ -293,6 +302,7 @@ public class OidcConfig extends BaseConfig {
 		private String jwkFilePath;
 		//private String trustMarks;
 		private String trustMarksFilePath;
+		private String encrJwkFilePath;
 
 	}
 
@@ -304,6 +314,7 @@ public class OidcConfig extends BaseConfig {
 		private String credentialEndpoint;
 		private Set<String> dpopSigningAlgValuesSupported = new HashSet<>();
 		private String jwkFilePath;
+		private String encrJwkFilePath;
 		private String sub;
 		private List<String> trustChain = new ArrayList<>();
 
@@ -361,6 +372,14 @@ public class OidcConfig extends BaseConfig {
 
 		public void setJwkFilePath(String jwkFilePath) {
 			this.jwkFilePath = jwkFilePath;
+		}
+
+		public String getEncrJwkFilePath() {
+			return encrJwkFilePath;
+		}
+
+		public void setEncrJwkFilePath(String encrJwkFilePath) {
+			this.encrJwkFilePath = encrJwkFilePath;
 		}
 
 		public String getSub() {

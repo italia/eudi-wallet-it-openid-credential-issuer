@@ -32,7 +32,7 @@ public class ResponseObjectUtil {
 	public String generateResponseObject(SessionInfo sessionInfo)
 			throws JOSEException, ParseException {
 
-		JWK jwk = oidcWrapper.getCredentialIssuerJWK();
+		JWK jwk = oidcWrapper.getJWK();
 		List<String> trustChain = oidcWrapper.getCredentialIssuerTrustChain();
 
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(new JOSEObjectType("jwt"))
@@ -50,6 +50,9 @@ public class ResponseObjectUtil {
 			// TODO remove after implementation
 			sessionInfo = new SessionInfo();
 			sessionInfo.setState(UUID.randomUUID().toString());
+			sessionInfo.setNonce(UUID.randomUUID().toString());
+		} else if (sessionInfo.getNonce() == null) {
+			// TODO remove after implementation
 			sessionInfo.setNonce(UUID.randomUUID().toString());
 		}
 

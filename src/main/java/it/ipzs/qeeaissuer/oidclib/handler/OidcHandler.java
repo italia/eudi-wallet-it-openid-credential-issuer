@@ -22,6 +22,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 
+import it.ipzs.qeeaissuer.oidclib.FederationEntityOptions;
 import it.ipzs.qeeaissuer.oidclib.GlobalOptions;
 import it.ipzs.qeeaissuer.oidclib.OIDCConstants;
 import it.ipzs.qeeaissuer.oidclib.OIDCCredentialIssuerOptions;
@@ -43,7 +44,6 @@ import it.ipzs.qeeaissuer.oidclib.model.EntityConfiguration;
 import it.ipzs.qeeaissuer.oidclib.model.FederationEntity;
 import it.ipzs.qeeaissuer.oidclib.model.TrustChain;
 import it.ipzs.qeeaissuer.oidclib.model.TrustChainBuilder;
-import it.ipzs.qeeaissuer.oidclib.FederationEntityOptions;
 import it.ipzs.qeeaissuer.oidclib.persistence.PersistenceAdapter;
 import it.ipzs.qeeaissuer.oidclib.schemas.CIEClaimItem;
 import it.ipzs.qeeaissuer.oidclib.schemas.ClaimItem;
@@ -863,6 +863,7 @@ public class OidcHandler {
 		// TODO: JWSAlgorithm via default?
 
 		String confJwk = options.getJwk();
+		String encrJwk = options.getEncrJwk();
 
 		// If not JSON Web Key is configured I have to create a new one
 
@@ -878,6 +879,8 @@ public class OidcHandler {
 
 		RSAKey jwk = JWTHelper.parseRSAKey(confJwk);
 
+		RSAKey encJwk = JWTHelper.parseRSAKey(encrJwk);
+
 		logger.info("Configured jwk\n" + jwk.toJSONString());
 
 		JSONArray jsonPublicJwk = new JSONArray()
@@ -885,7 +888,7 @@ public class OidcHandler {
 
 		logger.info("Configured public jwk\n" + jsonPublicJwk.toString(2));
 
-		JWKSet jwkSet = new JWKSet(jwk);
+		JWKSet jwkSet = new JWKSet(List.of(jwk, encJwk));
 
 		JSONObject rpJson = new JSONObject();
 
@@ -901,7 +904,7 @@ public class OidcHandler {
 
 		JSONObject metadataJson = new JSONObject();
 
-//		metadataJson.put(OIDCConstants.OPENID_RELYING_PARTY, rpJson);
+		metadataJson.put(OIDCConstants.OPENID_RELYING_PARTY, rpJson);
 
 		JSONObject credJson = new JSONObject();
 
@@ -913,11 +916,11 @@ public class OidcHandler {
 		} else {
 			RSAKey credJwk = JWTHelper.parseRSAKey(credJwkString);
 
-			logger.info("Configured credential jwk\n" + credJwk.toJSONString());
+			logger.info("Configured credential jwk\n {}", credJwk.toJSONString());
 
 			JSONArray credJsonPublicJwk = new JSONArray().put(new JSONObject(credJwk.toPublicJWK().toJSONObject()));
 
-			logger.info("Configured public jwk\n" + credJsonPublicJwk.toString(2));
+			logger.info("Configured public jwk\n {}", credJsonPublicJwk.toString(2));
 
 			credJwkSet = new JWKSet(credJwk);
 		}
@@ -932,7 +935,7 @@ public class OidcHandler {
 		if (credJwkSet != null)
 			credJson.put("jwks", JWTHelper.getJWKSetAsJSONObject(credJwkSet, false));
 
-		metadataJson.put(OIDCConstants.OPENID_CREDENTIAL_ISSUER, credJson);
+		// metadataJson.put(OIDCConstants.OPENID_CREDENTIAL_ISSUER, credJson);
 
 		metadataJson.put("federation_entity", federationEntityOptions.toJSON());
 

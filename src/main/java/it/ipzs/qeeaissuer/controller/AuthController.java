@@ -2,11 +2,14 @@ package it.ipzs.qeeaissuer.controller;
 
 import java.net.URI;
 import java.text.ParseException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,9 +31,11 @@ import it.ipzs.qeeaissuer.service.CredentialService;
 import it.ipzs.qeeaissuer.service.ParService;
 import it.ipzs.qeeaissuer.service.QeeaIssuerService;
 import it.ipzs.qeeaissuer.service.TokenService;
+import it.ipzs.qeeaissuer.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.core.HttpHeaders;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -45,6 +50,9 @@ public class AuthController {
 
 	@Value("${auth-controller.redirect-url}")
 	private String redirectUrl;
+
+	@Value("${auth-controller.client-url}")
+	private String clientUrl;
 
 	public AuthController(ParService parService, TokenService tokenService, CredentialService credentialService,
 			AuthorizationService authService, QeeaIssuerService qeeaIssuerService) {
@@ -71,7 +79,7 @@ public class AuthController {
 
 		// TODO check validity client assertion
 		Object cnf = parService.validateClientAssertionAndRetrieveCnf(client_assertion);
-		ParResponse response = parService.generateRequestUri(request, cnf);
+		ParResponse response = parService.generateRequestUri(request, cnf, client_assertion);
 		log.trace("par response: {}", response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
@@ -80,16 +88,53 @@ public class AuthController {
 	public ResponseEntity<?> authorize(@RequestParam("client_id") String client_id,
 			@RequestParam("request_uri") String request_uri) {
 
+		// TODO check client_id/request_uri
 		log.trace("/authorize params: client_id {} - request_uri {}", client_id, request_uri);
-		// TODO eIDAS LoA High
 		String stateParam = authService.retrieveStateParam(client_id, request_uri);
-		String uri = redirectUrl.concat("?state=").concat(stateParam);
+		String uri = redirectUrl.concat("?id=").concat(stateParam);
 		log.trace("authorize response: {}", uri);
-		return ResponseEntity.status(HttpStatus.FOUND)
-				.location(URI.create(uri)).build();
+		String transactionId = authService.generateTransactionIdAndReturnSessionInfo(client_id);
+		if (StringUtil.isBlank(transactionId)) {
+			log.error("Transaction ID not created!");
+		}
+		String responseUri = "eudiw://authorize?client_id=".concat(clientUrl).concat("&request_uri=").concat(uri);
+		HttpCookie cookie = ResponseCookie.from("transaction_id", transactionId).path("/").build();
+		return ResponseEntity.status(HttpStatus.FOUND).header(HttpHeaders.SET_COOKIE, cookie.toString())
+				.location(URI.create(responseUri)).build();
 	}
 
-	@GetMapping("/callback")
+	@GetMapping("/request_uri")
+	public ResponseEntity<?> requestUri(@RequestHeader("DPoP") String wiaDpop,
+			@RequestHeader("Authorization") String wiaAuth, @RequestParam("id") String id) {
+		// TODO validate DPoP
+		SessionInfo sessionInfo = qeeaIssuerService.retrieveSesssion(wiaAuth.replace("DPoP ", ""));
+		String requestObjectJwt = qeeaIssuerService.generateRequestObjectResponse(sessionInfo);
+		if (requestObjectJwt != null) {
+			Map<String, String> responseBody = new HashMap<>();
+			responseBody.put("response", requestObjectJwt);
+			return ResponseEntity.ok().body(responseBody);
+		}
+
+		else
+			return ResponseEntity.internalServerError().build();
+	}
+
+	@PostMapping("/callback")
+	public ResponseEntity<?> postCallback(@RequestParam Map<String, String> params, HttpServletRequest request,
+			HttpServletResponse response) {
+
+		// TODO validation encrypted and signed jwt
+		String responseCode = qeeaIssuerService.generateResponseCode();
+		if (responseCode != null) {
+			Map<String, String> responseBody = new HashMap<>();
+			responseBody.put("status", "OK");
+			responseBody.put("response_code", responseCode);
+			return ResponseEntity.ok(responseBody);
+		} else
+			return ResponseEntity.internalServerError().build();
+	}
+
+	@GetMapping(path = "/callback", produces = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 	public ResponseEntity<?> getCallback(@RequestParam Map<String, String> params, HttpServletRequest request,
 			HttpServletResponse response) {
 
@@ -107,29 +152,14 @@ public class AuthController {
 		String uri = si.getRedirectUri().concat("?code=").concat(si.getCode()).concat("&state=").concat(state)
 				.concat("&iss=https%3A%2F%2Fpid-provider.example.org");
 		log.trace("callback response: {}", uri);
-		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(uri)).build();
-	}
-
-	@PostMapping("/callback")
-	public ResponseEntity<?> postCallback(@RequestParam Map<String, String> params, HttpServletRequest request,
-			HttpServletResponse response) {
-
-		// TODO
-		String responseCode = qeeaIssuerService.generateResponseCode();
-		if (responseCode != null)
-			return ResponseEntity.ok(responseCode);
-		else
+		try {
+			String generateCallbackResponseJwt = qeeaIssuerService.generateCallbackResponseJwt(si, state, clientUrl);
+			return ResponseEntity.status(HttpStatus.OK).body("resonse=".concat(generateCallbackResponseJwt));
+		} catch (JOSEException | ParseException e) {
+			log.error("", e);
 			return ResponseEntity.internalServerError().build();
-	}
+		}
 
-	@GetMapping("/request_uri")
-	public ResponseEntity<?> requestUri(@RequestHeader("DPoP") String wiaDpop) {
-		// TODO validate DPoP
-		String requestObjectJwt = qeeaIssuerService.generateRequestObjectResponse();
-		if (requestObjectJwt != null)
-			return ResponseEntity.ok(requestObjectJwt);
-		else
-			return ResponseEntity.internalServerError().build();
 	}
 
 	@PostMapping(path = "/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -149,12 +179,7 @@ public class AuthController {
 		log.trace("-> code {}", code);
 		log.trace("-> DPoP header {}", dpop);
 
-		try {
-			tokenService.checkDpop(dpop);
-		} catch (Exception e) {
-			// TODO remove try-catch after integration
-			log.error("", e);
-		}
+		tokenService.checkDpop(dpop);
 		try {
 			tokenService.checkParams(client_id, code, code_verifier);
 		} catch (Exception e) {

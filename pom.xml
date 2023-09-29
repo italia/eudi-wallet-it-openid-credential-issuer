@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>qeea-issuer</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0</version>
 	<name>qeea-issuer</name>
 	<description>QEEA Issuer</description>
 	<properties>

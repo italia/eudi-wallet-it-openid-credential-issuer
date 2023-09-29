@@ -1,6 +1,10 @@
 package it.ipzs.qeeaissuer.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -43,7 +47,7 @@ public class ParService {
 
 	}
 
-	public ParResponse generateRequestUri(String request, Object cnf) {
+	public ParResponse generateRequestUri(String request, Object cnf, String clientAssertion) {
 		try {
 			JWTClaimsSet jwtClaimsSet = parRequestUtil.parse(request);
 
@@ -74,14 +78,22 @@ public class ParService {
 
 			response.setRequestUri("urn:ietf:params:oauth:request_uri:".concat(generateUriId()));
 			response.setExpiresIn(60);
+			si.setWalletInstanceAttestation(clientAssertion);
+			si.setHashedWia(generateHashedWia(clientAssertion));
 			si.setRequestUri(response.getRequestUri());
 			sessionUtil.putSessionInfo(si);
 
 			return response;
-		} catch (ParseException | JOSEException e) {
+		} catch (ParseException | JOSEException | NoSuchAlgorithmException e) {
 			log.error("", e);
 			throw new RuntimeException(e);
 		}
 
+	}
+
+	private String generateHashedWia(String clientAssertion) throws NoSuchAlgorithmException {
+		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		byte[] hashBytes = digest.digest(clientAssertion.getBytes(StandardCharsets.US_ASCII));
+		return Base64.getUrlEncoder().encodeToString(hashBytes);
 	}
 }

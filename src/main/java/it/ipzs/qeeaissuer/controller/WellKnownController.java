@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 
 @RestController
-@RequestMapping("/ci")
+@RequestMapping("/rp")
 public class WellKnownController {
 
 	private static Logger logger = LoggerFactory.getLogger(WellKnownController.class);

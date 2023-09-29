@@ -76,7 +76,7 @@ class ParServiceTest {
 
 
 		// Test
-		ParResponse response = parService.generateRequestUri("validRequest", cnf);
+		ParResponse response = parService.generateRequestUri("validRequest", cnf, null);
 
 		// Verify
 		assertNotNull(response);
@@ -94,7 +94,7 @@ class ParServiceTest {
 
 		// Test and Verify
 		assertThrows(IllegalArgumentException.class,
-				() -> parService.generateRequestUri("missingParameterRequest", cnf));
+				() -> parService.generateRequestUri("missingParameterRequest", cnf, null));
 		
 	}
 
@@ -104,7 +104,7 @@ class ParServiceTest {
 		when(parRequestJwtUtil.parse(anyString())).thenThrow(new ParseException("Parse Error", 0));
 		Cnf cnf = mock(Cnf.class);
 		// Test and Verify
-		assertThrows(RuntimeException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf));
+		assertThrows(RuntimeException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf, null));
 	}
 }
 

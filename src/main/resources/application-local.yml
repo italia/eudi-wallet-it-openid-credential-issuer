@@ -1,5 +1,6 @@
 auth-controller:
-  redirect-url: http://localhost:8080/cie/login
+  redirect-url: http://localhost:8080/request_uri
+  client-url: http://localhost:8080
 consent-controller:
   consent-url: http://localhost:8080/cie/consent
   accepted-url: http://localhost:8080/cie/accepted
@@ -44,7 +45,7 @@ oidc:
       - offline_access
       token-endpoint-auth-method: 
       - private_key_jwt
-      client-id: "http://${oidc.hosts.relying-party}:8080/ci"
+      client-id: "http://${oidc.hosts.relying-party}:8080/rp"
       redirect-uris:
       - "http://${oidc.hosts.relying-party}:8080/callback"
       jwk-file-path: ${user.home}/oidc-rp-jwk.json

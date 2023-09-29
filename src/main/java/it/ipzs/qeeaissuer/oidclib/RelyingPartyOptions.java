@@ -62,6 +62,8 @@ public class RelyingPartyOptions extends GlobalOptions<RelyingPartyOptions> {
 
 	private String userKeyClaim;
 
+	private String encrJwk;
+
 	private Map<String, String> acrMap = new HashMap<>();
 	private Map<String, Set<String>> scopeMap = new HashMap<>();
 	private Map<String, ClaimOptions> requestedClaimsMap = new HashMap<>();
@@ -495,6 +497,18 @@ public class RelyingPartyOptions extends GlobalOptions<RelyingPartyOptions> {
 			throw new ConfigException(
 				"invalid-user-key-claim-for-cie: %s", userKeyClaim);
 		}
+	}
+
+	public String getEncrJwk() {
+		return encrJwk;
+	}
+
+	public RelyingPartyOptions setEncrJWK(String encrJwk) {
+		if (!Validator.isNullOrEmpty(encrJwk)) {
+			this.encrJwk = encrJwk;
+		}
+
+		return this;
 	}
 
 }

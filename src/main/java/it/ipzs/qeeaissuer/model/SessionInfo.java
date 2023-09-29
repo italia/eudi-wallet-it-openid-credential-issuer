@@ -24,4 +24,10 @@ public class SessionInfo {
 	private Object cnf;
 
 	private String vpToken;
+
+	private String transactionId;
+
+	private String walletInstanceAttestation;
+
+	private String hashedWia;
 }

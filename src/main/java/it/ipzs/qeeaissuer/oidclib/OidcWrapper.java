@@ -166,6 +166,7 @@ public class OidcWrapper {
 	@PostConstruct
 	private void postConstruct() throws OIDCException {
 		String jwk = readFile(oidcConfig.getRelyingParty().getJwkFilePath());
+		String encrJwk = readFile(oidcConfig.getRelyingParty().getEncrJwkFilePath());
 		String trustMarks = readFile(
 				oidcConfig.getRelyingParty().getTrustMarksFilePath());
 
@@ -182,6 +183,7 @@ public class OidcWrapper {
 				.setRedirectUris(oidcConfig.getRelyingParty().getRedirectUris())
 				.setContacts(oidcConfig.getRelyingParty().getContacts())
 				.setJWK(jwk)
+				.setEncrJWK(encrJwk)
 				.setTrustMarks(trustMarks);
 
 		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());

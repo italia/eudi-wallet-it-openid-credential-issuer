@@ -20,6 +20,10 @@ public class AuthorizationService {
 		return srService.generateRandomByByteLength(32);
 	}
 
+	public String generateTransactionId() {
+		return srService.generateRandomByByteLength(48);
+	}
+
 	public String retrieveStateParam(String clientId, String requestUri) {
 		log.debug("clientId {} - requestUri {}", clientId, requestUri);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
@@ -43,6 +47,20 @@ public class AuthorizationService {
 		}
 
 		return sessionInfo;
+
+	}
+
+	public String generateTransactionIdAndReturnSessionInfo(String clientId) {
+		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
+		if (sessionInfo != null && !sessionInfo.isVerified()) {
+			sessionInfo.setTransactionId(generateTransactionId());
+			sessionUtil.putSessionInfo(sessionInfo);
+		} else {
+			log.debug("sessionInfo {} - clientId {}", sessionInfo, clientId);
+			throw new IllegalArgumentException("clientId param unknown");
+		}
+
+		return sessionInfo.getTransactionId();
 
 	}
 }
