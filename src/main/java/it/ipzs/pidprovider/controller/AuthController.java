@@ -44,6 +44,9 @@ public class AuthController {
 	@Value("${auth-controller.redirect-url}")
 	private String redirectUrl;
 
+	@Value("${auth-controller.issuer-url}")
+	private String issuer;
+
 	public AuthController(ParService parService, TokenService tokenService, CredentialService credentialService,
 			AuthorizationService authService) {
 		this.parService = parService;
@@ -79,14 +82,14 @@ public class AuthController {
 
 		log.trace("/authorize params: client_id {} - request_uri {}", client_id, request_uri);
 		// TODO eIDAS LoA High
-		String stateParam = authService.retrieveStateParam(client_id, request_uri);
-		String uri = redirectUrl.concat("?state=").concat(stateParam);
+		SessionInfo si = authService.retrieveStateParam(client_id, request_uri);
+		String uri = redirectUrl.concat("?state=").concat(si.getState());
 		log.trace("authorize response: {}", uri);
 		return ResponseEntity.status(HttpStatus.FOUND)
 				.location(URI.create(uri)).build();
 	}
 
-	@GetMapping("/callback")
+	@GetMapping(path = "/callback", produces = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 	public ResponseEntity<?> callback(@RequestParam Map<String, String> params, HttpServletRequest request,
 			HttpServletResponse response) {
 
@@ -95,6 +98,7 @@ public class AuthController {
 
 		String state = params.get("state");
 		SessionInfo si = null;
+		String responseDirectPost = "";
 		try {
 			si = authService.checkStateParamAndReturnSessionInfo(state);
 		} catch (Exception e) {
@@ -102,9 +106,15 @@ public class AuthController {
 			return ResponseEntity.badRequest().build();
 		}
 		String uri = si.getRedirectUri().concat("?code=").concat(si.getCode())
-				.concat("&state=").concat(state).concat("&iss=https%3A%2F%2Fpid-provider.example.org");
+				.concat("&state=").concat(state).concat("&iss=").concat(issuer);
+		try {
+			responseDirectPost = authService.generateDirectPostAuthorizeResponse(si, state, issuer);
+		} catch (JOSEException | ParseException e) {
+			log.error("", e);
+			return ResponseEntity.internalServerError().build();
+		}
 		log.trace("callback response: {}", uri);
-		return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(uri)).build();
+		return ResponseEntity.status(HttpStatus.OK).body("response=".concat(responseDirectPost));
 	}
 
 	@PostMapping(path = "/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -29,6 +29,8 @@ In this release there is a mock authentication: the credentials are `user`/`pass
 
 # Updates
 
+v.1.3.0 - authorize returns code and state in jwt
+
 v.1.2.1 - align PID Data Model and Issuance to spec [v.0.5.1](https://github.com/italia/eudi-wallet-it-docs/tree/0.5.1)
 
 v.1.2.0 - federation and Android SDK example - fix `cnf` param in credential

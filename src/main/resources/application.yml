@@ -15,15 +15,21 @@ springdoc:
   paths-to-exclude:
   - /cie/**
 auth-controller:
-  redirect-url: https://api.eudi-wallet-it-pid-provider.it/cie/login
+  redirect-url: https://api.eudi-wallet-it-pid-provider.it/callback
+  issuer-url: https://api.eudi-wallet-it-pid-provider.it
 consent-controller:
   consent-url: https://api.eudi-wallet-it-pid-provider.it/cie/consent
   accepted-url: https://api.eudi-wallet-it-pid-provider.it/cie/accepted
   callback-url: https://api.eudi-wallet-it-pid-provider.it/callback
+logging:
+  level:
+    '[it.ipzs.pidprovider.controller.AuthController]': WARN
 keys:
   directory-path: ${user.home}/key
   path: ${keys.directory-path}/eudi-pp-key-jwk.json
   public-jwk-set-path: ${keys.directory-path}/eudi-pp-public-jwk.json
+  encr-path: ${keys.directory-path}/eudi-encr-key-jwk.json
+  public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-public-key-jwk.json
 oidc:
    hosts:
       trust-anchor: 127.0.0.1
@@ -59,7 +65,7 @@ oidc:
       - offline_access
       token-endpoint-auth-method: 
       - private_key_jwt
-      client-id: "http://${oidc.hosts.relying-party}:8443/ci"
+      client-id: "http://${oidc.hosts.relying-party}:8080/ci"
       redirect-uris:
       - "http://${oidc.hosts.relying-party}:8080/callback"
       jwk-file-path: ${user.home}/oidc-rp-jwk.json
@@ -74,6 +80,7 @@ oidc:
       pushed-authorization-request-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/as/par"
       credential-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/credential"
       jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
+      encr-jwk-file-path: ${user.home}/key/eudi-encr-key-jwk.json
       sub: "http://${oidc.hosts.relying-party}:8080/ci"
 
    federation-entity:
@@ -82,3 +89,5 @@ oidc:
      policy-uri: "http://${oidc.hosts.relying-party}:8080/ci"
      tos-uri: "http://${oidc.hosts.relying-party}:8080/ci"
      logo-uri:  "http://${oidc.hosts.relying-party}:8080/public/logo.svg"
+metadata:
+  path: ${user.home}/metadata.json

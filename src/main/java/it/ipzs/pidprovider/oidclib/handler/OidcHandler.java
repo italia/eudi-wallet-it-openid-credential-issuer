@@ -906,9 +906,10 @@ public class OidcHandler {
 		JSONObject credJson = new JSONObject();
 
 		String credJwkString = credentialOptions.getJwk();
+		String credEncrJwkString = credentialOptions.getEncrJwk();
 
 		JWKSet credJwkSet = null;
-		if (Validator.isNullOrEmpty(credJwkString)) {
+		if (Validator.isNullOrEmpty(credJwkString) || Validator.isNullOrEmpty(credEncrJwkString)) {
 			logger.error("cannot load credential jwk");
 		} else {
 			RSAKey credJwk = JWTHelper.parseRSAKey(credJwkString);
@@ -920,6 +921,9 @@ public class OidcHandler {
 			logger.info("Configured public jwk\n" + credJsonPublicJwk.toString(2));
 
 			credJwkSet = new JWKSet(credJwk);
+			RSAKey credEncrJwk = JWTHelper.parseRSAKey(credEncrJwkString);
+
+			credJwkSet = new JWKSet(List.of(credJwk, credEncrJwk));
 		}
 		credJson.put("credential_issuer", credentialOptions.getCredentialIssueUrl());
 		credJson.put("authorization_endpoint", credentialOptions.getAuthorizationEndpoint());

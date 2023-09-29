@@ -16,6 +16,7 @@ import org.mockito.MockitoAnnotations;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.service.AuthorizationService;
 import it.ipzs.pidprovider.service.SRService;
+import it.ipzs.pidprovider.util.CallbackJwtUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
 
 class AuthorizationServiceTest {
@@ -26,12 +27,15 @@ class AuthorizationServiceTest {
 	@Mock
 	private SessionUtil sessionUtil;
 
+	@Mock
+	private CallbackJwtUtil dpJwtUtil;
+
 	private AuthorizationService authorizationService;
 
 	@BeforeEach
 	public void setup() {
 		MockitoAnnotations.openMocks(this);
-		authorizationService = new AuthorizationService(srService, sessionUtil);
+		authorizationService = new AuthorizationService(srService, sessionUtil, dpJwtUtil);
 	}
 
 	@Test
@@ -58,10 +62,10 @@ class AuthorizationServiceTest {
 		when(sessionUtil.getSessionInfo("clientId")).thenReturn(sessionInfo);
 
 		// Test
-		String state = authorizationService.retrieveStateParam("clientId", "requestUri");
+		SessionInfo si = authorizationService.retrieveStateParam("clientId", "requestUri");
 
 		// Verify
-		assertEquals("state", state);
+		assertEquals("state", si.getState());
 		verify(sessionUtil, times(1)).getSessionInfo("clientId");
 	}
 

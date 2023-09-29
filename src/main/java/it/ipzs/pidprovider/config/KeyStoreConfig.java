@@ -41,9 +41,11 @@ public class KeyStoreConfig implements CommandLineRunner {
 	@Value("${keys.public-jwk-set-path}")
 	private String publicKeyFilePath;
 
-	private JWK key;
+	@Value("${keys.encr-path}")
+	private String encrKeyFilePath;
 
-	private JWKSet jwks;
+	@Value("${keys.public-encr-jwk-set-path}")
+	private String publicEncrKeyFilePath;
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -87,8 +89,38 @@ public class KeyStoreConfig implements CommandLineRunner {
 			}
 		}
 
-		this.key = loadKey();
-		this.jwks = loadJWKS();
+		if (!new File(encrKeyFilePath).exists()) {
+			KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+			gen.initialize(2048);
+			KeyPair keyPair = gen.generateKeyPair();
+
+			Calendar cal = Calendar.getInstance();
+			cal.add(Calendar.YEAR, 1);
+			Date validityEndDate = cal.getTime();
+
+			JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+					.privateKey((RSAPrivateKey) keyPair.getPrivate()).keyUse(KeyUse.ENCRYPTION)
+					.keyID(UUID.randomUUID().toString()).issueTime(new Date()).expirationTime(validityEndDate)
+					.keyIDFromThumbprint().build();
+
+			try (FileWriter fw = new FileWriter(encrKeyFilePath)) {
+
+				fw.write(jwk.toJSONString());
+			} catch (Exception e) {
+				log.error("", e);
+			}
+
+			JSONArray jsonPublicJwk = new JSONArray().put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
+
+			JSONObject pubKeysJsonObj = new JSONObject().put("keys", jsonPublicJwk);
+
+			try (FileWriter fw = new FileWriter(publicEncrKeyFilePath)) {
+
+				fw.write(pubKeysJsonObj.toString());
+			} catch (Exception e) {
+				log.error("", e);
+			}
+		}
 
 	}
 
@@ -122,14 +154,6 @@ public class KeyStoreConfig implements CommandLineRunner {
 		}
 
 		throw new RuntimeException("cannot load key from file");
-	}
-
-	public JWK getKey() {
-		return key;
-	}
-
-	public JWKSet getJwks() {
-		return jwks;
 	}
 
 }

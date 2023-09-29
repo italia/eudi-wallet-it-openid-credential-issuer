@@ -10,7 +10,6 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import com.authlete.sd.Disclosure;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -25,9 +24,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.ipzs.pidprovider.dto.Cnf;
 import it.ipzs.pidprovider.dto.VerifiedClaims;
-import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.oidclib.OidcWrapper;
 import lombok.AllArgsConstructor;
 

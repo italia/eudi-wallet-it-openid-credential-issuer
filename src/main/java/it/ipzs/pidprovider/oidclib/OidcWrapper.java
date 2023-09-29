@@ -134,6 +134,19 @@ public class OidcWrapper {
 		return parsedJWK;
 	}
 
+	public JWK getEncryptCredentialIssuerJWK() throws ParseException {
+		String credJwk = oidcHandler.getCredentialOptions().getEncrJwk();
+		JWK parsedJWK = null;
+		try {
+			parsedJWK = JWK.parse(credJwk);
+		} catch (ParseException e) {
+			logger.error("", e);
+			throw e;
+		}
+
+		return parsedJWK;
+	}
+
 	public String getCredentialIssuerTrustMarks() {
 		return oidcHandler.getCredentialOptions().getTrustMarks();
 	}
@@ -169,8 +182,6 @@ public class OidcWrapper {
 		String trustMarks = readFile(
 			oidcConfig.getRelyingParty().getTrustMarksFilePath());
 
-		logger.info("final jwk: " + jwk);
-		logger.info("final trust_marks: " + trustMarks);
 
 		RelyingPartyOptions options = new RelyingPartyOptions()
 			.setDefaultTrustAnchor(oidcConfig.getDefaultTrustAnchor())
@@ -186,6 +197,8 @@ public class OidcWrapper {
 
 		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
 
+		String encrCredJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getEncrJwkFilePath());
+
 		OIDCCredentialIssuerOptions credentialOptions = OIDCCredentialIssuerOptions.builder()
 				.pushedAuthorizationRequestEndpoint(
 						oidcConfig.getOpenidCredentialIssuer().getPushedAuthorizationRequestEndpoint())
@@ -195,6 +208,7 @@ public class OidcWrapper {
 				.authorizationEndpoint(oidcConfig.getOpenidCredentialIssuer().getAuthorizationEndpoint())
 				.credentialsSupported(generateCredentialSupportedList())
 				.jwk(credJwk)
+				.encrJwk(encrCredJwk)
 				.sub(oidcConfig.getOpenidCredentialIssuer().getSub())
 				.trustChain(oidcConfig.getOpenidCredentialIssuer().getTrustChain())
 				.build();
