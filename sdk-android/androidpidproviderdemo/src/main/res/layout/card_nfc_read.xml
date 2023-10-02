@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/containerNfcScan"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    app:cardCornerRadius="@dimen/dimen_20"
+    app:cardElevation="@dimen/dimen_30">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="@dimen/dimen_20">
+
+        <TextView
+            android:id="@+id/nfcCieTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@string/cie_scan_ready"
+            android:textColor="@color/black"
+            android:textSize="@dimen/font_22"
+            app:autoSizeMaxTextSize="@dimen/font_22"
+            app:autoSizeMinTextSize="@dimen/font_14"
+            app:autoSizeTextType="uniform"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:layout_editor_absoluteX="20dp" />
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/animationViewNfcCie"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/nfcCieTitle"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_fileName="@string/lottie_nfc" />
+
+        <TextView
+            android:id="@+id/nfcCieDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/dimen_20"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="2"
+            android:text="@string/tap_cie"
+            android:textColor="@color/black"
+            android:textSize="@dimen/font_16"
+            app:autoSizeMaxTextSize="@dimen/font_16"
+            app:autoSizeMinTextSize="@dimen/font_10"
+            app:autoSizeTextType="uniform"
+            app:layout_constraintTop_toBottomOf="@+id/animationViewNfcCie"
+            tools:layout_editor_absoluteX="20dp" />
+
+        <Button
+            android:id="@+id/cancelButtonNfcCie"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dimen_50"
+            android:layout_marginTop="@dimen/dimen_20"
+            android:backgroundTint="@color/button_grey"
+            android:gravity="center"
+            android:text="@string/cancel"
+            android:textAllCaps="false"
+            android:textColor="@color/black"
+            android:textSize="@dimen/font_14"
+            app:layout_constraintTop_toBottomOf="@id/nfcCieDescription" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+</androidx.cardview.widget.CardView>

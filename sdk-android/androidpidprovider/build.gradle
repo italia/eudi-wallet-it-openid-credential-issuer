@@ -1,0 +1,83 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    compileSdk 33
+
+    defaultConfig {
+        minSdk 23
+        targetSdk 33
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+ext {
+    kotlin_version = '1.7.20'
+    core_version = '1.10.1'
+    activity_version = '1.7.2'
+    fragment_version = '1.6.0'
+    browser_version = '1.5.0'
+    viewmodel_version = '2.6.1'
+    appcompat_version = '1.6.1'
+    lifecycle_version = '2.2.0'
+    okhttp_version = '4.10.0'
+    retrofit_version = '2.9.0'
+    security_version = '1.1.0-alpha06'
+    jose_jwt_version = '9.23'
+    oauth2_version = '10.9.1'
+}
+
+dependencies {
+
+    api project(path: ':cieidsdk')
+
+    implementation "androidx.core:core-ktx:$core_version"
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+    implementation "androidx.activity:activity-ktx:$activity_version"
+    implementation "androidx.fragment:fragment-ktx:$fragment_version"
+    implementation "androidx.browser:browser:$browser_version"
+
+    //Lifecycle
+    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+
+    //Network
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+    implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit_version"
+
+    //Security
+    implementation "androidx.security:security-crypto:$security_version"
+    implementation "com.nimbusds:nimbus-jose-jwt:$jose_jwt_version"
+    implementation "com.nimbusds:oauth2-oidc-sdk:$oauth2_version"
+    implementation 'io.jsonwebtoken:jjwt:0.7.0'
+
+    // Test
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}

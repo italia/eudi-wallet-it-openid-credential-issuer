@@ -1,0 +1,10 @@
+auth-controller:
+  redirect-url: http://localhost:8443/callback
+  issuer-url: http://localhost:8443
+consent-controller:
+  consent-url: http://localhost:8443/cie/consent
+  accepted-url: http://localhost:8443/cie/accepted
+  callback-url: http://localhost:8443/callback
+logging:
+  level:
+    '[it.ipzs.pidprovider.controller.AuthController]': WARN  

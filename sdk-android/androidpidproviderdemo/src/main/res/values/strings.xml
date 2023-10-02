@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Pid Provider SDK</string>
+
+    <string name="cie_name">Name: %s</string>
+    <string name="cie_surname">Surname: %s</string>
+    <string name="cie_date_of_birth">Date of Birth: %s</string>
+    <string name="cie_fiscal_code">Fiscal Code: %s</string>
+
+    <string name="insert_your_pin_card">Inserisci il PIN della tua carta di identità</string>
+    <string name="pin_is_code">Il PIN è un codice di 8 cifre.</string>
+    <string name="pin">PIN</string>
+    <string name="continue_on">Continua</string>
+    <string name="cancel">Annulla</string>
+
+    <string name="cie_scan_ready">Pronto per la scansione</string>
+    <string name="tap_cie">Appoggia la tua carta d\'identità elettronica nella parte alta del telefono</string>
+    <string name="cie_reading">Lettura in corso</string>
+    <string name="cie_reading_desc">Tieni ferma la carta per qualche secondo…</string>
+
+</resources>
