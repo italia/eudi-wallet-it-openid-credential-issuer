@@ -105,4 +105,9 @@ public class DpopUtil {
 		return jwt.getHeader().getKeyID();
 	}
 
+	public JWK getJwk(String dpop) throws ParseException {
+		SignedJWT jwt = SignedJWT.parse(dpop);
+		return jwt.getHeader().getJWK();
+	}
+
 }

@@ -106,7 +106,12 @@ public class AuthController {
 	@GetMapping("/request_uri")
 	public ResponseEntity<?> requestUri(@RequestHeader("DPoP") String wiaDpop,
 			@RequestHeader("Authorization") String wiaAuth, @RequestParam("id") String id) {
-		// TODO validate DPoP
+		
+		log.trace("-> DPoP {}", wiaDpop);
+		log.trace("-> Authorization {}", wiaAuth);
+		log.trace("-> id {}", id);
+		
+		qeeaIssuerService.checkDpop(wiaDpop);
 		SessionInfo sessionInfo = qeeaIssuerService.retrieveSesssion(wiaAuth.replace("DPoP ", ""));
 		String requestObjectJwt = qeeaIssuerService.generateRequestObjectResponse(sessionInfo);
 		if (requestObjectJwt != null) {
@@ -124,6 +129,9 @@ public class AuthController {
 			HttpServletResponse response) {
 
 		// TODO validation encrypted and signed jwt
+		String directPostParam = params.get("response");
+		log.trace("-> response directPostParam {}", directPostParam);
+		qeeaIssuerService.checkAndReadDirectPostResponse(directPostParam);
 		String responseCode = qeeaIssuerService.generateResponseCode();
 		if (responseCode != null) {
 			Map<String, String> responseBody = new HashMap<>();
@@ -224,7 +232,7 @@ public class AuthController {
 		}
 		CredentialResponse response;
 		try {
-			response = credentialService.generateSdCredentialResponse(proofReq);
+			response = credentialService.generateSdCredentialResponse(dpop, proofReq);
 			log.trace("credential response: {}", response);
 			return ResponseEntity.ok(response);
 		} catch (JOSEException e) {

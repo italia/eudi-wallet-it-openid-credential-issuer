@@ -2,6 +2,8 @@ package it.ipzs.qeeaissuer;
 
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,12 +31,12 @@ class AuthControllerTest {
 	@Test
 	void testParRequestSuccess() {
 		String request = "some valid request";
-		String requestUri = "https://pid-provider.example.org/as/par/1234567890";
+		String requestUri = "https://wallet-rp.example.org/as/par/1234567890";
 		ParResponse parResponse = new ParResponse();
 		parResponse.setRequestUri(requestUri);
 		Cnf cnf = mock(Cnf.class);
 		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
-		when(parService.generateRequestUri(request, cnf, requestUri)).thenReturn(parResponse);
+		when(parService.generateRequestUri(anyString(), any(), anyString())).thenReturn(parResponse);
 
 		ResponseEntity<ParResponse> response = authController.parRequest(null, null, null, null, null,
 				"some valid client assertion", request);
@@ -48,7 +50,7 @@ class AuthControllerTest {
 		String request = "some invalid request";
 		Cnf cnf = mock(Cnf.class);
 		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
-		when(parService.generateRequestUri(request, cnf, request))
+		when(parService.generateRequestUri(anyString(), any(), anyString()))
 				.thenThrow(new IllegalArgumentException("Invalid request"));
 
 

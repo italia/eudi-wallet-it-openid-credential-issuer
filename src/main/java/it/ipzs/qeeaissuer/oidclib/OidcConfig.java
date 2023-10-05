@@ -211,6 +211,10 @@ public class OidcConfig extends BaseConfig {
 			return Collections.unmodifiableSet(redirectUris);
 		}
 
+		public Set<String> getRequestUris() {
+			return Collections.unmodifiableSet(requestUris);
+		}
+
 //		public String getJwk() {
 //			return jwk;
 //		}
@@ -267,6 +271,10 @@ public class OidcConfig extends BaseConfig {
 			this.redirectUris = redirectUris;
 		}
 
+		public void setRequestUris(Set<String> requestUris) {
+			this.requestUris = requestUris;
+		}
+
 		public JSONObject toJSON() {
 			JSONObject json = new JSONObject();
 
@@ -298,6 +306,7 @@ public class OidcConfig extends BaseConfig {
 		private Set<String> scope = new HashSet<>();
 		private String clientId;
 		private Set<String> redirectUris = new HashSet<>();
+		private Set<String> requestUris = new HashSet<>();
 		//private String jwk;
 		private String jwkFilePath;
 		//private String trustMarks;

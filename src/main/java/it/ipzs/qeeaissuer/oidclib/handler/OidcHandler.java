@@ -376,6 +376,10 @@ public class OidcHandler {
 		return options.getJwk();
 	}
 
+	public String retrieveRelyingPartyJWK() {
+		return options.getJwk();
+	}
+
 	public OIDCCredentialIssuerOptions getCredentialOptions() {
 		return credentialOptions;
 	}
@@ -863,7 +867,6 @@ public class OidcHandler {
 		// TODO: JWSAlgorithm via default?
 
 		String confJwk = options.getJwk();
-		String encrJwk = options.getEncrJwk();
 
 		// If not JSON Web Key is configured I have to create a new one
 
@@ -879,7 +882,6 @@ public class OidcHandler {
 
 		RSAKey jwk = JWTHelper.parseRSAKey(confJwk);
 
-		RSAKey encJwk = JWTHelper.parseRSAKey(encrJwk);
 
 		logger.info("Configured jwk\n" + jwk.toJSONString());
 
@@ -888,7 +890,7 @@ public class OidcHandler {
 
 		logger.info("Configured public jwk\n" + jsonPublicJwk.toString(2));
 
-		JWKSet jwkSet = new JWKSet(List.of(jwk, encJwk));
+		JWKSet jwkSet = new JWKSet(List.of(jwk));
 
 		JSONObject rpJson = new JSONObject();
 
@@ -901,41 +903,26 @@ public class OidcHandler {
 		rpJson.put("grant_types", RelyingPartyOptions.SUPPORTED_GRANT_TYPES);
 		rpJson.put("response_types", RelyingPartyOptions.SUPPORTED_RESPONSE_TYPES);
 		rpJson.put("redirect_uris", options.getRedirectUris());
+		rpJson.put("default_max_age", 1111);
+		rpJson.put("authorization_signed_response_alg", List.of( "RS256",
+				"ES256"));
+		rpJson.put("authorization_encrypted_response_alg", List.of("RSA-OAEP", "RSA-OAEP-256"));
+		rpJson.put("authorization_encrypted_response_enc",
+				List.of("A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512", "A128GCM", "A192GCM", "A256GCM"));
+		rpJson.put("subject_type", "pairwise");
+		rpJson.put("require_auth_time", true);
+		rpJson.put("id_token_signed_response_alg", List.of("RS256", "ES256"));
+		rpJson.put("id_token_encrypted_response_alg", List.of("RSA-OAEP", "RSA-OAEP-256"));
+		rpJson.put("id_token_encrypted_response_enc",
+				List.of("A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512", "A128GCM", "A192GCM", "A256GCM"));
+		rpJson.put("redirect_uris", List.of(options.getRedirectUris()));
+		rpJson.put("request_uris", List.of(options.getRequestUris()));
+		
+
 
 		JSONObject metadataJson = new JSONObject();
 
-		metadataJson.put(OIDCConstants.OPENID_RELYING_PARTY, rpJson);
-
-		JSONObject credJson = new JSONObject();
-
-		String credJwkString = credentialOptions.getJwk();
-
-		JWKSet credJwkSet = null;
-		if (Validator.isNullOrEmpty(credJwkString)) {
-			logger.error("cannot load credential jwk");
-		} else {
-			RSAKey credJwk = JWTHelper.parseRSAKey(credJwkString);
-
-			logger.info("Configured credential jwk\n {}", credJwk.toJSONString());
-
-			JSONArray credJsonPublicJwk = new JSONArray().put(new JSONObject(credJwk.toPublicJWK().toJSONObject()));
-
-			logger.info("Configured public jwk\n {}", credJsonPublicJwk.toString(2));
-
-			credJwkSet = new JWKSet(credJwk);
-		}
-		credJson.put("credential_issuer", credentialOptions.getCredentialIssueUrl());
-		credJson.put("authorization_endpoint", credentialOptions.getAuthorizationEndpoint());
-		credJson.put("token_endpoint", credentialOptions.getTokenEndpoint());
-		credJson.put("pushed_authorization_request_endpoint",
-				credentialOptions.getPushedAuthorizationRequestEndpoint());
-		credJson.put("dpop_signing_alg_values_supported", credentialOptions.getDpopSigningAlgValuesSupported());
-		credJson.put("credential_endpoint", credentialOptions.getCredentialEndpoint());
-		credJson.put("credentials_supported", credentialOptions.getCredentialsSupported());
-		if (credJwkSet != null)
-			credJson.put("jwks", JWTHelper.getJWKSetAsJSONObject(credJwkSet, false));
-
-		// metadataJson.put(OIDCConstants.OPENID_CREDENTIAL_ISSUER, credJson);
+		metadataJson.put(OIDCConstants.OPENID_WALLET_RP, rpJson);
 
 		metadataJson.put("federation_entity", federationEntityOptions.toJSON());
 
@@ -945,8 +932,8 @@ public class OidcHandler {
 
 		json.put("exp", iat + (GlobalOptions.DEFAULT_EXPIRING_MINUTES * 3600 * 365));
 		json.put("iat", iat);
-		json.put("iss", credentialOptions.getSub());
-		json.put("sub", credentialOptions.getSub());
+		json.put("iss", options.getClientId());
+		json.put("sub", options.getClientId());
 		json.put("jwks", JWTHelper.getJWKSetAsJSONObject(jwkSet, true));
 		json.put("metadata", metadataJson);
 		json.put(

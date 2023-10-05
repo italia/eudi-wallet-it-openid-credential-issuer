@@ -121,6 +121,19 @@ public class OidcWrapper {
 		return parsedJWK;
 	}
 
+	public JWK getRelyingPartyJWK() throws ParseException {
+		String jwk = oidcHandler.retrieveJWK();
+		JWK parsedJWK = null;
+		try {
+			parsedJWK = JWK.parse(jwk);
+		} catch (ParseException e) {
+			logger.error("", e);
+			throw e;
+		}
+
+		return parsedJWK;
+	}
+
 	public JWK getCredentialIssuerJWK() throws ParseException {
 		String credJwk = oidcHandler.getCredentialOptions().getJwk();
 		JWK parsedJWK = null;
@@ -139,10 +152,34 @@ public class OidcWrapper {
 	}
 
 	public List<String> getCredentialIssuerTrustChain() {
-		return generateTrustChain();
+		return generateCredentialIssuerTrustChain();
 	}
 
-	private List<String> generateTrustChain() {
+	private List<String> generateCredentialIssuerTrustChain() {
+		RestTemplate restTemplate = new RestTemplate();
+
+		try {
+			ResponseEntity<String> entity = restTemplate.getForEntity(new URI(oidcConfig.getFederationTrustChainUrl()),
+					String.class);
+			String fedTc = entity.getBody();
+
+			WellKnownData wellKnown = getWellKnownData(false);
+
+			return List.of(wellKnown.getValue(), fedTc);
+
+		} catch (RestClientException | URISyntaxException | OIDCException e) {
+			logger.error("Error in trust chain retrieval", e);
+
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	public List<String> getRelyingPartyTrustChain() {
+		return generateRelyingPartyTrustChain();
+	}
+
+	private List<String> generateRelyingPartyTrustChain() {
 		RestTemplate restTemplate = new RestTemplate();
 
 		try {
@@ -181,6 +218,7 @@ public class OidcWrapper {
 				.setApplicationName(oidcConfig.getRelyingParty().getApplicationName())
 				.setClientId(oidcConfig.getRelyingParty().getClientId())
 				.setRedirectUris(oidcConfig.getRelyingParty().getRedirectUris())
+				.setRequestUris(oidcConfig.getRelyingParty().getRequestUris())
 				.setContacts(oidcConfig.getRelyingParty().getContacts())
 				.setJWK(jwk)
 				.setEncrJWK(encrJwk)

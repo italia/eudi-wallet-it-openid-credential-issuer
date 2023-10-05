@@ -6,10 +6,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import com.authlete.sd.Disclosure;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -24,9 +24,7 @@ import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import it.ipzs.qeeaissuer.dto.Cnf;
 import it.ipzs.qeeaissuer.dto.VerifiedClaims;
-import it.ipzs.qeeaissuer.model.SessionInfo;
 import it.ipzs.qeeaissuer.oidclib.OidcWrapper;
 import lombok.AllArgsConstructor;
 
@@ -50,7 +48,7 @@ public class SdJwtUtil {
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256).type(new JOSEObjectType("kb+jwt")).build();
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issueTime(new Date())
-				.audience(List.of("https://api.eudi-wallet-it-pid-provider.it")).claim("nonce", nonce).build();
+				.audience(List.of("https://api.eudi-wallet-it-issuer.it")).claim("nonce", nonce).build();
 
 
 		SignedJWT jwt = new SignedJWT(header, claimsSet);
@@ -64,12 +62,15 @@ public class SdJwtUtil {
 		return jwt.serialize();
 	}
 
-	public String generateCredential(SessionInfo sessionInfo, VerifiedClaims vc)
+	public String generateCredential(VerifiedClaims vc, JWK dpopJwk)
 			throws JOSEException, ParseException {
 
 
-		JWK jwk = oidcWrapper.getCredentialIssuerJWK();
-		List<String> trustChain = oidcWrapper.getCredentialIssuerTrustChain();
+		JSONObject cnfObj = new JSONObject();
+		cnfObj.put("jwk", dpopJwk.toPublicJWK().toJSONObject());
+
+		JWK jwk = oidcWrapper.getRelyingPartyJWK();
+		List<String> trustChain = oidcWrapper.getRelyingPartyTrustChain();
 
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.RS256).type(new JOSEObjectType("vc+sd-jwt"))
 				.keyID(jwk.getKeyID())
@@ -81,18 +82,17 @@ public class SdJwtUtil {
 		cal.add(Calendar.YEAR, 1);
 		Date validityEndDate = cal.getTime();
 
-		String cnfKidClaim = extractKidFromCnf(sessionInfo.getCnf());
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.issueTime(new Date())
-				.issuer("https://api.eudi-wallet-it-pid-provider.it")
-				.subject(cnfKidClaim)
+				.issuer("https://api.eudi-wallet-it-issuer.it")
+				.subject(dpopJwk.computeThumbprint().toString())
 				.jwtID("urn:uuid:".concat(UUID.randomUUID().toString()))
 				.expirationTime(validityEndDate)
 				.claim("verified_claims", vc)
 				.claim("_sd_alg", "sha-256")
-				.claim("status", "https://api.eudi-wallet-it-pid-provider.it/status") // TODO implementation
-				.claim("type", "PersonIdentificationData")
-				.claim("cnf", sessionInfo.getCnf())
+				.claim("status", "https://api.eudi-wallet-it-issuer.it/status") // TODO implementation
+				.claim("type", "HealthInsuranceData")
+				.claim("cnf", cnfObj.toMap())
 				.build();
 
 		SignedJWT jwt = new SignedJWT(header, claimsSet);
@@ -103,12 +103,6 @@ public class SdJwtUtil {
 		jwt.sign(signer);
 
 		return jwt.serialize();
-	}
-
-	private String extractKidFromCnf(Object cnfObj) {
-		ObjectMapper om = new ObjectMapper();
-		Cnf cnf = om.convertValue(cnfObj, Cnf.class);
-		return cnf.getJwk().getKid();
 	}
 
 }

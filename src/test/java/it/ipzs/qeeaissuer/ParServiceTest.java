@@ -76,7 +76,7 @@ class ParServiceTest {
 
 
 		// Test
-		ParResponse response = parService.generateRequestUri("validRequest", cnf, null);
+		ParResponse response = parService.generateRequestUri("validRequest", cnf, "clientAssertion");
 
 		// Verify
 		assertNotNull(response);

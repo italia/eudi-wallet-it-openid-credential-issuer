@@ -11,6 +11,7 @@ import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.authlete.sd.SDObjectBuilder;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.qeeaissuer.dto.CredentialResponse;
@@ -43,15 +44,15 @@ public class CredentialService {
 
 
 
-	public CredentialResponse generateSdCredentialResponse(ProofRequest proof)
+	public CredentialResponse generateSdCredentialResponse(String dpop, ProofRequest proof)
 			throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
 		return CredentialResponse.builder().format("vc+sd-jwt")
-				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(proof, nonce)).build();
+				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(dpop, proof)).build();
 
 	}
 
-	private String generateSdJwtCredential(ProofRequest proof, String nonce)
+	private String generateSdJwtCredential(String dpop, ProofRequest proof)
 			throws JOSEException, ParseException {
 
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
@@ -59,10 +60,11 @@ public class CredentialService {
 			throw new RuntimeException("No client id known found");
 		}
 
+		JWK jwk = dpopUtil.getJwk(dpop);
+
 		// FIXME test data
 		Disclosure nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
 		Disclosure familyClaim = sdJwtUtil.generateGenericDisclosure("family_name", "Rossi");
-		Disclosure uniqueIdClaim = sdJwtUtil.generateGenericDisclosure("unique_id", "idANPR");
 		Disclosure birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate", "1980-10-01");
 		Disclosure placeOfBirthClaim = sdJwtUtil.generateGenericDisclosure("place_of_birth",
 				PlaceOfBirthDto.builder().country("IT").locality("Rome").build());
@@ -75,11 +77,11 @@ public class CredentialService {
 		ev.setType("electronic_record");
 
 		RecordDto rec = new RecordDto();
-		rec.setType("eidas.it.cie");
+		rec.setType("https://eudi.wallet.pdnd.gov.it");
 		SourceDto src = new SourceDto();
 		src.setCountry_code("IT");
-		src.setOrganization_id("m_it");
-		src.setOrganization_name("Ministero dell'Interno");
+		src.setOrganization_id("urn:eudi:it:organization_id:ipa_code:QLHCFC");
+		src.setOrganization_name("Ragioneria Generale dello Stato");
 
 		rec.setSource(src);
 
@@ -91,7 +93,6 @@ public class CredentialService {
 		builder.putSDClaim(birthdateClaim);
 		builder.putSDClaim(placeOfBirthClaim);
 		builder.putSDClaim(taxClaim);
-		builder.putSDClaim(uniqueIdClaim);
 
 
 		SDObjectBuilder evBuilder = new SDObjectBuilder();
@@ -104,8 +105,8 @@ public class CredentialService {
 		vc.setVerification(evBuilder.build());
 
 		SDJWT sdjwt = new SDJWT(
-				sdJwtUtil.generateCredential(sessionInfo, vc),
-				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
+				sdJwtUtil.generateCredential(vc, jwk),
+				List.of(evDisclosure, nameClaim, familyClaim, birthdateClaim, placeOfBirthClaim,
 						taxClaim));
 
 		String sdJwtString = sdjwt.toString();

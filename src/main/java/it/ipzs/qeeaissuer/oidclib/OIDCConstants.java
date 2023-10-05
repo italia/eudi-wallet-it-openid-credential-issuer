@@ -13,4 +13,6 @@ public class OIDCConstants {
 
 	public static final String OPENID_CREDENTIAL_ISSUER = "openid_credential_issuer";
 
+	public static final String OPENID_WALLET_RP = "wallet_relying_party";
+
 }

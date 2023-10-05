@@ -5,9 +5,11 @@ import java.text.ParseException;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.qeeaissuer.model.SessionInfo;
 import it.ipzs.qeeaissuer.util.CallbackResponseJwtUtil;
+import it.ipzs.qeeaissuer.util.DpopUtil;
 import it.ipzs.qeeaissuer.util.ResponseCodetUtil;
 import it.ipzs.qeeaissuer.util.ResponseObjectUtil;
 import it.ipzs.qeeaissuer.util.SessionUtil;
@@ -21,21 +23,21 @@ public class QeeaIssuerService {
 	private final SessionUtil sessionUtil;
 	private final ResponseCodetUtil responseCodetUtil;
 	private final CallbackResponseJwtUtil callbackResponseJwtUtil;
+	private final DpopUtil dpopUtil;
 
 	public QeeaIssuerService(ResponseObjectUtil responseObjectUtil, ResponseCodetUtil responseCodetUtil,
 			CallbackResponseJwtUtil callbackResponseJwtUtil,
-			SessionUtil sessionUtil) {
+			SessionUtil sessionUtil, DpopUtil dpopUtil) {
 		super();
 		this.responseObjectUtil = responseObjectUtil;
 		this.responseCodetUtil = responseCodetUtil;
 		this.callbackResponseJwtUtil = callbackResponseJwtUtil;
 		this.sessionUtil = sessionUtil;
+		this.dpopUtil = dpopUtil;
 	}
 
 	public String generateRequestObjectResponse(SessionInfo si) {
 		log.debug("generating response object...");
-
-		// TODO implementation
 		try {
 			return responseObjectUtil.generateResponseObject(si);
 		} catch (JOSEException | ParseException e) {
@@ -47,7 +49,6 @@ public class QeeaIssuerService {
 	public String generateResponseCode() {
 		log.debug("generating response code...");
 
-		// TODO implementation
 		return responseCodetUtil.generateResponseCode(null);
 	}
 
@@ -63,6 +64,27 @@ public class QeeaIssuerService {
 			log.error("", e);
 			return null;
 		}
+	}
+
+	public void checkDpop(String wiaDpop) {
+		try {
+			JWTClaimsSet claimsSet = dpopUtil.parse(wiaDpop);
+			String htuClaim = dpopUtil.getHtuClaim(claimsSet);
+			String htmClaim = dpopUtil.getHtmClaim(claimsSet);
+
+			if (!htuClaim.endsWith("/request_uri") || !htmClaim.equals("GET")) {
+				throw new IllegalArgumentException("Invalid claims: " + htmClaim + " - " + htuClaim);
+			}
+		} catch (ParseException | JOSEException e) {
+			log.error("", e);
+			throw new RuntimeException("", e);
+		}
+
+	}
+
+	public void checkAndReadDirectPostResponse(String directPostParam) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

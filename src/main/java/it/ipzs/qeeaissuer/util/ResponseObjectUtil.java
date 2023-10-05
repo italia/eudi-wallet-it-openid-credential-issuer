@@ -63,10 +63,10 @@ public class ResponseObjectUtil {
 				.expirationTime(validityEndDate)
 				.claim("scope", "eu.europa.ec.eudiw.pid.it.1 pid-sd-jwt:unique_id+given_name+family_name")
 				.claim("client_id_scheme", "entity_id")
-				.claim("client_id", "https://api.eudi-wallet-it-pid-provider.it")
+				.claim("client_id", "https://api.eudi-wallet-it-issuer.it")
 				.claim("response_mode", "direct_post.jwt")
 				.claim("response_type", "vp_token")
-				.claim("response_uri", "https://api.eudi-wallet-it-pid-provider.it/callback")
+				.claim("response_uri", "https://api.eudi-wallet-it-issuer.it/callback")
 				.claim("state", sessionInfo.getState())
 				.claim("nonce", sessionInfo.getNonce())
 				.build();

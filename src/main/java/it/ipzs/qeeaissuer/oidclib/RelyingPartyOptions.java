@@ -53,6 +53,7 @@ public class RelyingPartyOptions extends GlobalOptions<RelyingPartyOptions> {
 	private Set<String> contacts = new HashSet<>();
 	private String clientId;
 	private Set<String> redirectUris = new HashSet<>();
+	private Set<String> requestUris = new HashSet<>();
 	private String jwk;
 	private String trustMarks;
 
@@ -167,6 +168,10 @@ public class RelyingPartyOptions extends GlobalOptions<RelyingPartyOptions> {
 		return Collections.unmodifiableSet(redirectUris);
 	}
 
+	public Set<String> getRequestUris() {
+		return Collections.unmodifiableSet(requestUris);
+	}
+
 	public String getJwk() {
 		return jwk;
 	}
@@ -271,6 +276,15 @@ public class RelyingPartyOptions extends GlobalOptions<RelyingPartyOptions> {
 		if (redirectUris != null && !redirectUris.isEmpty()) {
 			this.redirectUris.clear();
 			this.redirectUris.addAll(redirectUris);
+		}
+
+		return this;
+	}
+
+	public RelyingPartyOptions setRequestUris(Collection<String> requestUris) {
+		if (requestUris != null && !requestUris.isEmpty()) {
+			this.requestUris.clear();
+			this.requestUris.addAll(requestUris);
 		}
 
 		return this;

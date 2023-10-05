@@ -67,6 +67,8 @@ oidc:
       client-id: "http://${oidc.hosts.relying-party}:8080/rp"
       redirect-uris:
       - "http://${oidc.hosts.relying-party}:8080/callback"
+      request-uris:
+      - "http://${oidc.hosts.relying-party}:8080/request_uri"
       jwk-file-path: ${user.home}/oidc-rp-jwk.json
       trust-marks-file-path: ${user.home}/oidc-rp-trust-marks.json
       encr-jwk-file-path: ${user.home}/key/eudi-encr-rp-key-jwk.json      
@@ -81,6 +83,12 @@ oidc:
       credential-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/credential"
       jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
       sub: "http://${oidc.hosts.relying-party}:8080/ci"
+   federation-entity:
+     homepage-uri: "http://${oidc.hosts.relying-party}:8080/rp"
+     organization-name: "EUDI IT Wallet Issuer"
+     policy-uri: "http://${oidc.hosts.relying-party}:8080/rp"
+     tos-uri: "http://${oidc.hosts.relying-party}:8080/rp"
+     logo-uri:  "http://${oidc.hosts.relying-party}:8080/public/logo.svg"
      
 metadata:
   path: ${user.home}/metadata.json
