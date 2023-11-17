@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.1.2</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.ipzs</groupId>
-	<artifactId>qeea-issuer</artifactId>
-	<version>1.1.0</version>
-	<name>qeea-issuer</name>
-	<description>QEEA Issuer</description>
+	<artifactId>qeaa-issuer</artifactId>
+	<version>1.4.0</version>
+	<name>qeaa-issuer</name>
+	<description>QEAA Issuer</description>
 	<properties>
 		<java.version>17</java.version>
 		<snakeyaml.version>2.0</snakeyaml.version>
@@ -42,15 +41,15 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	 	<dependency>
-	      <groupId>org.springdoc</groupId>
-	      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-	      <version>2.0.0</version>
-	   </dependency>
 		<dependency>
-		    <groupId>com.nimbusds</groupId>
-		    <artifactId>nimbus-jose-jwt</artifactId>
-		    <version>9.31</version>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>9.31</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -58,26 +57,26 @@
 			<version>0.9.1</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.authlete</groupId>
-		    <artifactId>sd-jwt</artifactId>
-		    <version>1.3</version>
+			<groupId>com.authlete</groupId>
+			<artifactId>sd-jwt</artifactId>
+			<version>1.3</version>
 		</dependency>
 		<dependency>
-		    <groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-starter-security</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
-				<dependency>
+		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
-			<version>20230227</version>
+			<version>20231013</version>
 		</dependency>
 		<dependency>
-		    <groupId>commons-codec</groupId>
-		    <artifactId>commons-codec</artifactId>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.ws.rs</groupId>
@@ -98,7 +97,48 @@
 			<version>2.2.220</version>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-cbor</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>co.nstant.in</groupId>
+			<artifactId>cbor</artifactId>
+			<version>0.9</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.cose</groupId>
+			<artifactId>cose</artifactId>
+			<version>20230908</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.iot.cbor</groupId>
+			<artifactId>cbor</artifactId>
+			<version>0.01.02</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.augustcellars.cose</groupId>
+		    <artifactId>cose-java</artifactId>
+		    <version>1.1.0</version>
+		</dependency>
+		<dependency>
+		  <groupId>com.upokecenter</groupId>
+		  <artifactId>cbor</artifactId>
+		  <version>4.5.2</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.bouncycastle</groupId>
+		    <artifactId>bcprov-jdk18on</artifactId>
+		    <version>1.77</version>
+		</dependency>
+
 	</dependencies>
+	<repositories>
+		<repository>
+			<id>google-repo</id>
+			<url>https://maven.google.com/</url>
+		</repository>
+	</repositories>
 	<build>
 		<plugins>
 			<plugin>

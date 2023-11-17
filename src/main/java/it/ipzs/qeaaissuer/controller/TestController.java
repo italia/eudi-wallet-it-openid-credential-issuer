@@ -1,0 +1,242 @@
+package it.ipzs.qeaaissuer.controller;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.authlete.sd.Disclosure;
+import com.authlete.sd.SDJWT;
+import com.authlete.sd.SDObjectBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+
+import it.ipzs.qeaaissuer.dto.CredentialDefinitionDto;
+import it.ipzs.qeaaissuer.dto.CredentialResponse;
+import it.ipzs.qeaaissuer.dto.EvidenceDto;
+import it.ipzs.qeaaissuer.dto.MdocCborDto;
+import it.ipzs.qeaaissuer.dto.RecordDto;
+import it.ipzs.qeaaissuer.dto.SourceDto;
+import it.ipzs.qeaaissuer.dto.VerifiedClaims;
+import it.ipzs.qeaaissuer.model.SessionInfo;
+import it.ipzs.qeaaissuer.service.CredentialService;
+import it.ipzs.qeaaissuer.service.MdocCborService;
+import it.ipzs.qeaaissuer.util.SdJwtUtil;
+import lombok.extern.slf4j.Slf4j;
+
+@RestController
+@Slf4j
+@RequestMapping("test")
+//controller for testing purpose
+public class TestController {
+
+	@Autowired
+	private MdocCborService mdocCborService;
+
+	@Autowired
+	private CredentialService credService;
+
+	@Autowired
+	private SdJwtUtil sdJwtUtil;
+
+	@PostMapping("/list_disclosure")
+	public ResponseEntity<Void> listDisclosureFields(@RequestBody String credentials) {
+
+		SDJWT sdJwt = SDJWT.parse(credentials);
+		List<Disclosure> disclosures = sdJwt.getDisclosures();
+		log.info("credential jwt {}", sdJwt.getCredentialJwt());
+		try {
+			SignedJWT jwt = SignedJWT.parse(sdJwt.getCredentialJwt());
+			JWTClaimsSet claimsSet = jwt.getJWTClaimsSet();
+			log.info("claimSet credential: {}", claimsSet);
+		} catch (ParseException e) {
+			log.error("", e);
+		}
+
+		disclosures.stream().forEach(ds -> {
+			log.info("disclosure claim name {}", ds.getClaimName());
+			log.info("disclosure claim value {}", ds.getClaimValue());
+		});
+
+		return ResponseEntity.ok().build();
+
+	}
+
+	@GetMapping("/generate_sd_jwt")
+	public ResponseEntity<String> generateSdJwt() throws JOSEException, ParseException {
+
+		String sdJwt = generate();
+		return ResponseEntity.ok(sdJwt);
+	}
+
+	@GetMapping("/test-mdoc-parsing")
+	public ResponseEntity<?> testMdoc() throws IOException {
+
+		try {
+			String hexCborTest = "A366737461747573006776657273696F6E63312E3069646F63756D656E747381A267646F6354797065781865752E6575726F70612E65632E65756469772E7069642E316C6973737565725369676E6564A26A697373756572417574688443A10126A1182159021930820215308201BCA003020102021404AD06A30C1A6DC6E93BE0E2E8F78DCAFA7907C2300A06082A8648CE3D040302305B310B3009060355040613025A45312E302C060355040A0C25465053204D6F62696C69747920616E64205472616E73706F7274206F66205A65746F706961311C301A06035504030C1349414341205A65746573436F6E666964656E73301E170D3231303932393033333034355A170D3232313130333033333034345A3050311A301806035504030C114453205A65746573436F6E666964656E7331253023060355040A0C1C5A65746F70696120436974792044657074206F662054726166666963310B3009060355040613025A453059301306072A8648CE3D020106082A8648CE3D030107034200047C5545E9A0B15F4FF3CE5015121E8AD3257C28D541C1CD0D604FC9D1E352CCC38ADEF5F7902D44B7A6FC1F99F06EEDF7B0018FD9DA716AEC2F1FFAC173356C7DA3693067301F0603551D23041830168014BBA2A53201700D3C97542EF42889556D15B7AC4630150603551D250101FF040B3009060728818C5D050102301D0603551D0E04160414CE5FD758A8E88563E625CF056BFE9F692F4296FD300E0603551D0F0101FF040403020780300A06082A8648CE3D0403020347003044022012B06A3813FFEC5679F3B8CDDB51EAA4B95B0CBB1786B09405E2000E9C46618C02202C1F778AD252285ED05D9B55469F1CB78D773671F30FE7AB815371942328317C59032AD818590325A667646F6354797065781865752E6575726F70612E65632E65756469772E7069642E316776657273696F6E63312E306C76616C6964697479496E666FA3667369676E6564C074323032332D30322D32325430363A32333A35365A6976616C696446726F6DC074323032332D30322D32325430363A32333A35365A6A76616C6964556E74696CC074323032342D30322D32325430303A30303A30305A6C76616C756544696765737473A2781865752E6575726F70612E65632E65756469772E7069642E31AC015820A7FFC6F8BF1ED76651C14756A061D662F580FF4DE43B49FA82D80A4B80F8434A025820CD372FB85148700FA88095E3492D3F9F5BEB43E555E5FF26D95F5A6ADC36F8E6035820E67E72111B363D80C8124D28193926000980E1211C7986CACBD26AACC5528D48045820F7D062D662826ED95869851DB06BB539B402047BAEE53A00E0AA35BFBE98265D0658202A132DBFE4784627B86AA3807CD19CFEFF487AAB3DD7A60D0AB119A72E736936075820BDCA9E8DBCA354E824E67BFE1533FA4A238B9EA832F23FB4271EBEB3A5A8F7200858202C0EAEC2F05B6C7FE7982683E3773B5D8D7A01E33D04DFCB162ADD8BD99BEE9A095820BFE220D85657CCEC3C67E7DB1DF747E9148A152334BB6D4B65B273279BCC36EC0A582018E38144F5044301D6A0B4EC9D5F98D4CD950E6EA2C29B849CBD457DA29B6AD30B58203C71D2F0EFA09D9E3FBBDFFD29204F6B292C9F79570AEF72DD86C91F7A3AA5C50C582065743D58D89D45E52044758F546034FD13A4F994BC270CDFA7844F74EB3F4B6E0D5820B4A8EB5D523BFFA17B41BDA12DDC7DA32AE1E5F7FF3DCC394A35401F16919BBF781B65752E6575726F70612E65632E65756469772E7069642E69742E31A10E58209D6C11644651126C94ACDAF0803E86D4C71D15D3B2712A14295416734EFD514D6D6465766963654B6579496E666FA1696465766963654B6579A401022001215820BA01AEA44EEE1E338EB2F04E279DBD51B34655783EE185150838C9A7A7C4DB7122582025BA0044439A3871A7B975A0994A85E79B705A9AC263B3FE899B0A93412EE8C96F646967657374416C676F726974686D675348412D32353658400813C28FD62F2602CBC14724E5865733C44A0FCA589B55C085EC9D5C725D6CCE25BA0044439A3871A7B975A0994A85E79B705A9AC263B3FE899B0A93412EE8C96A6E616D65537061636573A2781865752E6575726F70612E65632E65756469772E7069642E318DD818586DA4686469676573744944016672616E646F6D5820156DF9227AD341EAA61AABD301106FD21BDC18820E01DFC16BCF5FECC447111B71656C656D656E744964656E7469666965726B6578706972795F646174656C656C656D656E7456616C7565D903EC6A323032342D30322D3232D818586FA4686469676573744944026672616E646F6D5820A3A1F13F05544D03A5B50B5FDB78465808393BCF3B7953A345FE28F820C7BE0D71656C656D656E744964656E7469666965726D69737375616E63655F646174656C656C656D656E7456616C7565D903EC6A323032332D30322D3232D8185866A4686469676573744944036672616E646F6D5820852591F90F2C9DED57A03632E2C1322AB52A082A431E71A4149A6830C8F1AD0C71656C656D656E744964656E7469666965726F69737375696E675F636F756E7472796C656C656D656E7456616C7565624954D818587CA4686469676573744944046672616E646F6D5820D1D587B3512ACCE15C4F6B20944CEB002A464E4A158389788563408873C3FCE571656C656D656E744964656E7469666965727169737375696E675F617574686F726974796C656C656D656E7456616C7565764D696E69737465726F2064656C6C27496E7465726E6FD8185864A4686469676573744944056672616E646F6D582094FDD7609C0E73DC8589B5CAB11E1D9058CF8BFF8A336DA5F81FCBA055396A0F71656C656D656E744964656E7469666965726A676976656E5F6E616D656C656C656D656E7456616C7565654D6172696FD8185865A4686469676573744944066672616E646F6D5820660C0A7BF79E0E0261CA1547A4294FB808AA70738F424B13AB1B9440B566AE1371656C656D656E744964656E7469666965726B66616D696C795F6E616D656C656C656D656E7456616C756565526F737369D818586BA4686469676573744944076672616E646F6D5820315C53491286488FA07F5C2CE67135EF5C9959C3469C99A14E9B6DC924F9EBA571656C656D656E744964656E746966696572696269727468646174656C656C656D656E7456616C7565D903EC6A313935362D30312D3132D818587AA4686469676573744944086672616E646F6D582081C5CC04FBDF78E0F84DF72FDB87028ADE08E66DC5F31084826EBAD7AE70D84671656C656D656E744964656E7469666965726B62697274685F706C6163656C656C656D656E7456616C756581A267636F756E747279624954686C6F63616C69747964526F6D65D818587DA4686469676573744944096672616E646F6D5820764EF39C9D01F3AA6A87F441603CFE853FBA3CEE3BC2C168BCC9E96271D6E06371656C656D656E744964656E74696669657269756E697175655F69646C656C656D656E7456616C7565781E78787878787878782D7878782D787878782D787878787878787878787878D81858E8A46864696765737449440A6672616E646F6D5820AD20B3B9C67AED8089FF33ECDC108781C3B49B81CD7A3F059D2FE236977037B271656C656D656E744964656E74696669657275766572696669636174696F6E2E65766964656E63656C656C656D656E7456616C756581A2647479706571656C656374726F6E69635F7265636F7264667265636F7264A264747970656C65696461732E69742E63696566736F75726365A3716F7267616E697A6174696F6E5F6E616D656C65696461732E69742E6369656F6F7267616E697A6174696F6E5F6964646D5F69746C636F756E7472795F636F6465626974D8185879A46864696765737449440B6672616E646F6D5820C12314B3695D1401505187E2113115E2F7B4A14B135DEE320F5E6DF81275F17671656C656D656E744964656E746966696572667374617475736C656C656D656E7456616C7565781D68747470733A2F2F70696470726F76696465722E69742F737461747573D8185877A46864696765737449440C6672616E646F6D5820A7B6A9027ED97F25DF96DD0EAB8093B264A3BD6A1D5B24228F3FC5B18EF835FB71656C656D656E744964656E746966696572781C766572696669636174696F6E2E74727573745F6672616D65776F726B6C656C656D656E7456616C7565656569646173D8185876A46864696765737449440D6672616E646F6D5820C76CE2AE4E9BE1DB07A5CB397B54ACE3ECCC786D3F85E4348B923DEE059783DB71656C656D656E744964656E746966696572781C766572696669636174696F6E2E6173737572616E63655F6C6576656C6C656C656D656E7456616C75656468696768781B65752E6575726F70612E65632E65756469772E7069642E69742E3181D8185877A46864696765737449440E6672616E646F6D5820717DF3F583B1484366C33A1F869F2B5D201D466A8B589C79AB1A2D85E595432571656C656D656E744964656E7469666965726D7461785F69645F6E756D6265726C656C656D656E7456616C75657554494E49542D585858585858585858585858585858";
+
+			MdocCborDto cborDto = mdocCborService.parseMdocCbor(hexCborTest);
+			ObjectMapper objectMapper = new ObjectMapper();
+
+			String jsonString = objectMapper.writeValueAsString(cborDto);
+			log.info("mdoc cbor parsed:");
+			log.info("{}", jsonString);
+			return ResponseEntity.ok(cborDto);
+
+		} catch (Exception e) {
+			log.error("", e);
+			return ResponseEntity.internalServerError().body(e.getMessage());
+		}
+	}
+
+	@GetMapping("/test-mdoc-encoding")
+	public ResponseEntity<?> testEncodingMdoc() throws IOException {
+
+		try {
+
+			mdocCborService.generateMdocCbor(null, null);
+			return ResponseEntity.ok().build();
+		} catch (Exception e) {
+			log.error("", e);
+			return ResponseEntity.internalServerError().body(e.getMessage());
+		}
+	}
+
+	@PostMapping("/test-multi-credential")
+	public ResponseEntity<?> testMultiCredentials(@RequestParam String credential_definition,
+			@RequestParam String format) throws IOException {
+
+		CredentialDefinitionDto credDefinition = null;
+		ObjectMapper om = new ObjectMapper();
+		try {
+			credDefinition = om.readValue(credential_definition, CredentialDefinitionDto.class);
+		} catch (JsonProcessingException e) {
+			log.error("", e);
+		}
+		CredentialResponse response;
+		try {
+			String dpop = "eyJ0eXAiOiJkcG9wK2p3dCIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IjgySDRXbFZSbF9DVFVObUFRU2x6aWMzdXRPNTJNQWFlcFF3V05uc2ltT00iLCJ5IjoiaFJtaGdPZTVLLUxhazVZRHYwWndVMFdFNm1sQTJqU2s4R2FRNjBxX0RqMCIsImtpZCI6InNKSG42Tm1KYUR6LWFHTVYxc2VqbnhkV2xiUjFRRlVhM0x1MGRFOVI3b3cifSwiYWxnIjoiRVMyNTYifQ.eyJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9hcGkuZXVkaS13YWxsZXQtaXQtaXNzdWVyLml0L2NyZWRlbnRpYWwiLCJqdGkiOiJjY2U1Nzk5My1kZWVjLTQzMzctYmZkMy0zMWE3YmU4ZjY4N2UiLCJpYXQiOjE2OTk0NjE0MzksImV4cCI6MTY5OTQ2NTAzOX0.jfYF-QD7MYSxB1a63c-g_ScFZKGD_zk2k4C2cXFYiEA9s5Nl8Wh9gGuX_7JdvmumcsnCNCW4lhr5c1SifFFPug";
+			if ("vc+sd-jwt".equals(format)) {
+				response = credService.generateSdCredentialResponse(dpop, null, credDefinition);
+			} else {
+				response = credService.generateMdocCborCredentialResponse(dpop, null, credDefinition);
+			}
+
+			log.trace("credential response: {}", response);
+			return ResponseEntity.ok(response);
+		} catch (JOSEException e) {
+			log.error("", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		} catch (ParseException e) {
+			log.error("", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+		}
+	}
+
+	private String generate() throws JOSEException, ParseException {
+
+		SessionInfo sessionInfo = new SessionInfo();
+
+		ECKey ecKey = new ECKeyGenerator(Curve.P_256).keyID(UUID.randomUUID().toString()).generate();
+
+		JWK jwk = ecKey;
+
+		Disclosure nameClaim;
+		Disclosure familyClaim;
+		Disclosure birthdateClaim;
+		// FIXME test data
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("given_name") != null) {
+			nameClaim = sdJwtUtil.generateGenericDisclosure("given_name",
+					sessionInfo.getPidCredentialClaims().get("given_name"));
+		} else {
+			nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
+		}
+
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("family_name") != null) {
+			familyClaim = sdJwtUtil.generateGenericDisclosure("family_name",
+					sessionInfo.getPidCredentialClaims().get("family_name"));
+		} else {
+			familyClaim = sdJwtUtil.generateGenericDisclosure("family_name", "Rossi");
+		}
+
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("birthdate") != null) {
+			birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate",
+					sessionInfo.getPidCredentialClaims().get("birthdate"));
+		} else {
+			birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate", "1980-10-01");
+		}
+
+		Disclosure serialClaim = sdJwtUtil.generateGenericDisclosure("serial_number", "12345678");
+		Disclosure accompanyRightClaim = sdJwtUtil.generateGenericDisclosure("accompanying_person_right", "1");
+		Disclosure expirationDateClaim = sdJwtUtil.generateGenericDisclosure("expiration_date", "2025-10-01");
+
+		VerifiedClaims vc = new VerifiedClaims();
+
+		EvidenceDto ev = new EvidenceDto();
+		ev.setType("electronic_record");
+
+		RecordDto rec = new RecordDto();
+		rec.setType("https://eudi.wallet.pdnd.gov.it");
+		SourceDto src = new SourceDto();
+		src.setCountry_code("IT");
+		src.setOrganization_id("urn:eudi:it:organization_id:ipa_code:QLHCFC");
+		src.setOrganization_name("Ragioneria Generale dello Stato");
+
+		rec.setSource(src);
+
+		ev.setRecord(rec);
+
+		SDObjectBuilder builder = new SDObjectBuilder();
+		builder.putSDClaim(nameClaim);
+		builder.putSDClaim(familyClaim);
+		builder.putSDClaim(birthdateClaim);
+		builder.putSDClaim(serialClaim);
+		builder.putSDClaim(accompanyRightClaim);
+		builder.putSDClaim(expirationDateClaim);
+
+		SDObjectBuilder evBuilder = new SDObjectBuilder();
+		evBuilder.putClaim("assurance_level", "high");
+		evBuilder.putClaim("trust_framework", "eidas");
+		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", List.of(ev));
+		builder.putSDClaim(evDisclosure);
+		evBuilder.putSDClaim(evDisclosure);
+
+		vc.setClaims(builder.build());
+		vc.setVerification(evBuilder.build());
+
+		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk, "EuropeanDisabilityCard"), List.of(evDisclosure,
+				nameClaim, familyClaim,
+				birthdateClaim, serialClaim, expirationDateClaim, accompanyRightClaim));
+
+		String sdJwtString = sdjwt.toString();
+		String substring = sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
+
+		log.info("sdJwt {}", sdJwtString);
+		log.info("---------");
+		log.info("substring {}", substring);
+
+		// remove last tilde for SD-JWT draft 4 compliance
+		return substring;
+
+	}
+}

@@ -10,7 +10,7 @@ springdoc:
   cache:
    disabled: true
   packages-to-scan:
-  - it.ipzs.qeeaissuer.controller
+  - it.ipzs.qeaaissuer.controller
   paths-to-exclude:
   - /cie/**
 auth-controller:
@@ -22,7 +22,7 @@ consent-controller:
   callback-url: https://api.eudi-wallet-it-issuer.it/callback
 logging:
   level:
-    '[it.ipzs.qeeaissuer.controller.AuthController]': WARN
+    '[it.ipzs.qeaaissuer.controller.AuthController]': WARN
 keys:
   directory-path: ${user.home}/key
   path: ${keys.directory-path}/eudi-pp-key-jwk.json
@@ -39,7 +39,7 @@ oidc:
    # required for onboarding checks and also for all the leafs
    default-trust-anchor: "http://${oidc.hosts.trust-anchor}:8000/"
 
-   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://api.eudi-wallet-it-issuer.it/rp"
+   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://api.eudi-wallet-it-issuer.it/rp/"
 
    # List of trust anchors
    trust-anchors:
@@ -75,6 +75,7 @@ oidc:
 
    openid-credential-issuer:
       credential-issuer: 127.0.0.1:8080
+      id: eudi-wallet-it-issuer.it
       dpop-signing-alg-values-supported:
       - RS256
       authorization-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/authorize"
