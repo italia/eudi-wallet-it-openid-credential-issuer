@@ -440,4 +440,14 @@ public class OidcWrapper {
 		return "";
 	}
 
+	public void reloadKeys() {
+		String jwk = readFile(oidcConfig.getRelyingParty().getJwkFilePath());
+		String encrJwk = readFile(oidcConfig.getRelyingParty().getEncrJwkFilePath());
+		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
+		this.oidcHandler.getCredentialOptions().setJwk(credJwk);
+		this.oidcHandler.getRelyingPartyOptions().setJWK(jwk);
+		this.oidcHandler.getRelyingPartyOptions().setEncrJWK(encrJwk);
+		logger.info("key reloaded!");
+	}
+
 }

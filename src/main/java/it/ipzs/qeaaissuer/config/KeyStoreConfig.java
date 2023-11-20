@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 
+import it.ipzs.qeaaissuer.oidclib.OidcWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -48,11 +50,19 @@ public class KeyStoreConfig implements CommandLineRunner {
 	@Value("${keys.public-encr-jwk-set-path}")
 	private String publicEncrKeyFilePath;
 
+	@Autowired
+	private OidcWrapper oidcWrapper;
+
 	@Override
 	public void run(String... args) throws Exception {
+		log.info("Running KeyStore...");
+		boolean reload = false;
 		Path keyPath = Paths.get(keyDirectoryPath);
 		if (!Files.exists(keyPath)) {
 			Files.createDirectory(keyPath);
+			reload = true;
+		} else {
+			log.info("{} path exists", keyDirectoryPath);
 		}
 
 		if (!new File(keyFilePath).exists()) {
@@ -88,6 +98,9 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
+			reload = true;
+		} else {
+			log.info("{} path exists", keyFilePath);
 		}
 
 		if (!new File(encrKeyFilePath).exists()) {
@@ -122,6 +135,13 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
+			reload = true;
+		} else {
+			log.info("{} path exists", encrKeyFilePath);
+		}
+
+		if (reload) {
+			oidcWrapper.reloadKeys();
 		}
 
 	}

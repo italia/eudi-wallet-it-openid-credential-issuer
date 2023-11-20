@@ -90,6 +90,3 @@ oidc:
      policy-uri: "http://${oidc.hosts.relying-party}:8080/rp"
      tos-uri: "http://${oidc.hosts.relying-party}:8080/rp"
      logo-uri:  "http://${oidc.hosts.relying-party}:8080/public/logo.svg"
-     
-metadata:
-  path: ${user.home}/metadata.json
