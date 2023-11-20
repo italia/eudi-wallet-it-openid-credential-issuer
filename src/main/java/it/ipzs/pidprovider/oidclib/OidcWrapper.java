@@ -282,7 +282,7 @@ public class OidcWrapper {
 
 		credDef.setCredentialSubject(credSubj);
 		
-		cred.setCredential_definition(List.of(credDef));
+		cred.setCredential_definition(credDef);
 
 		credentialSupported.add(cred);
 
@@ -302,6 +302,17 @@ public class OidcWrapper {
 		}
 
 		return "";
+	}
+	
+	public void reloadKeys() {
+		String jwk = readFile(oidcConfig.getRelyingParty().getJwkFilePath());
+		String encrJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getEncrJwkFilePath());
+		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
+		this.oidcHandler.getCredentialOptions().setJwk(credJwk);
+		this.oidcHandler.getRelyingPartyOptions().setJWK(jwk);
+		this.oidcHandler.getCredentialOptions().setEncrJwk(encrJwk);
+
+		logger.info("key reloaded!");
 	}
 
 }

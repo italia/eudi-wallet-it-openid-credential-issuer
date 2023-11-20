@@ -17,6 +17,6 @@ public class CredentialType {
 
 	private List<DisplayConf> display;
 
-	private List<CredentialDefinition> credential_definition;
+	private CredentialDefinition credential_definition;
 
 }

@@ -9,6 +9,7 @@ import org.springframework.web.servlet.ModelAndView;
 import it.ipzs.pidprovider.oidclib.OidcConfig;
 import it.ipzs.pidprovider.oidclib.OidcWrapper;
 import it.ipzs.pidprovider.oidclib.schemas.WellKnownData;
+import it.ipzs.pidprovider.util.KeyStoreUtil;
 import jakarta.servlet.http.HttpServletRequest;
 
 
@@ -38,6 +39,9 @@ public class HomeController {
 		if (wellKnow.hasOnlyJwks()) {
 			mav.addObject("mineJwks", wellKnow.getValue());
 			mav.addObject("configFile", oidcConfig.getRelyingParty().getJwkFilePath());
+			KeyStoreUtil.storeKey(oidcConfig.getRelyingParty().getJwkFilePath(), wellKnow.getValue());
+
+			oidcWrapper.reloadKeys();
 		}
 
 		if (wellKnow.isIntermediate()) {

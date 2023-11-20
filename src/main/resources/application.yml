@@ -5,7 +5,6 @@ spring:
     ansi:
       enabled: ALWAYS
 server:
-  port: 8443
   forward-headers-strategy: framework
 springdoc:
   cache:

@@ -9,25 +9,106 @@ EUDI-it-wallet-pid-provider is a backend service developed in Java with Spring B
 In this release there is a mock authentication: the credentials are `user`/`password`.
 
 ## Creating Docker Image and Launching Container
-- Compile and build the project's JAR file.
+1. Compile and build the project's JAR file.
 
   `mvn clean package`
 
-- Build an image using the Dockerfile provided in the code (use the `-t` option to specify a name:tag for the image).
+2. Build an image using the Dockerfile provided in the code (use the `-t` option to specify a name:tag for the image).
 
-  `docker build -t eudi-it-wallet-pid-provider .`
+  `docker build -t it-wallet-pid-provider .`
 
-- Launch a container using the newly created image (where -p EXT_PORT:INT_PORT maps the internal port - to be consistent with the one specified in the YAML file with the Docker profile - and exposes it to a port of our choice).
+3. otherwise, configure the following environment variables for the docker image
 
-  `docker run -p 8443:8443 eudi-it-wallet-pid-provider`
-  
-- Verify the successful accessibility of the [swagger](http://localhost:8443/swagger-ui/index.html) endpoint
+```
+    ENV SERVER_PORT=8080
+
+    #base url or the domain that expose this container
+    ENV BASE_URL=http://localhost:${SERVER_PORT}
+
+    #similar to base url
+    ENV CLIENT_URL=${BASE_URL}
+
+    #host of the trust anchor
+    ENV HOST_TRUST_ANCHOR=127.0.0.1:8002
+
+    #host of the CIE provider
+    ENV HOST_CIE_PROVIDER=127.0.0.1:8001
+
+    #host of the relying party
+    ENV HOST_RELYING_PARTY=127.0.0.1:${SERVER_PORT}
+
+    #path to the keys
+    ENV KEY_ROOT_PATH=${HOME}/key
+
+    #path to RP jwk
+    ENV RP_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-rp-key-jwk.json
+
+    #path to trust mark, optional
+    ENV RP_TRUST_MARK_FILE_PATH=${KEY_ROOT_PATH}/oidc-rp-trust-marks.json
+
+    #path to RP encryption jwk
+
+    ENV RP_ENCR_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-encr-rp-key-jwk.json
+
+    #RP client id
+    ENV RP_CLIENT_ID=${BASE_URL}/ci
+
+    #RP redirect callback endpoint
+    ENV RP_REDIRECT_CALLBACK_URI=https://${HOST_RELYING_PARTY}/rp/callback
+
+    #RP request uri endpoint
+    ENV RP_REQUEST_URI=https://${HOST_RELYING_PARTY}/request_uri
+
+
+    ENV DEFAULT_TRUST_ANCHOR=https://${HOST_TRUST_ANCHOR}
+
+    #URL to call for relying party trust chain retrieval
+    ENV FEDERATION_TC_URL=${DEFAULT_TRUST_ANCHOR}/fetch?sub=${RP_CLIENT_ID}/
+
+    #optional
+    ENV SPID_PROVIDER_SUB=https://$HOST_TRUST_ANCOR/oidc/op/
+
+    #optional
+    ENV CIE_PROVIDER_SUB=https://$HOST_CIE_PROVIDER/oidc/op/
+
+    #OpenId Credential Issuer
+    ENV OID_CI_CRED_ISS=127.0.0.1:${SERVER_PORT}
+
+    #Credential issuer JWK path
+    ENV OID_CI_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-pp-key-jwk.json
+
+    ENV OID_CI_ENCR_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-encr-pp-key-jwk.json
+
+    #external yml for this service
+    ENV CONF_FILE=${CONF_FILE}/application-docker.yml
+
+```
+
+4. adjust ENTRYPOINT to load external data i.e. logback
+
+	`ENTRYPOINT ["java", "-Dlogback.configurationFile=/path/to/config.xml" ,"-Dspring.profiles.active=docker", "-Dspring.config.location=${CONF_FILE}", "-Dlogging.file.name=/home/spring/log/app.log", "-Dspring.pidfile=/home/spring/pid/application.pid","-jar","/home/spring/app.jar"]`
+
+
+5. run the image created, i.e. 
+
+	`docker run -p 8080:8080 qeaa-issuer:1.0`
+
+6. if the first run, call the jwk creation endpoint:
+
+	`http://localhost:8080/admin/federation/home`
+ 
+
+7. verify that the configuration is completed:
+
+	`http://localhost:8080/ci/.well-known/openid-federation?format=json `
 
 ## Docker Hub Repository
 
 [EUDI IT Wallet Pid Provider - Docker Hub Image Repository](https://hub.docker.com/r/ipzssviluppo/eudi-it-wallet-pid-provider)
 
 # Updates
+
+v.1.3.1 - fix Docker config
 
 v.1.3.0 - authorize returns code and state in jwt
 

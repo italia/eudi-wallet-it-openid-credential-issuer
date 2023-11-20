@@ -17,6 +17,7 @@ import java.util.UUID;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 
+import it.ipzs.pidprovider.oidclib.OidcWrapper;
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -47,11 +49,17 @@ public class KeyStoreConfig implements CommandLineRunner {
 	@Value("${keys.public-encr-jwk-set-path}")
 	private String publicEncrKeyFilePath;
 
+	@Autowired
+	private OidcWrapper oidcWrapper;
+
 	@Override
 	public void run(String... args) throws Exception {
 		Path keyPath = Paths.get(keyDirectoryPath);
+		boolean reload = false;
 		if (!Files.exists(keyPath)) {
 			Files.createDirectory(keyPath);
+			reload = true;
+			log.info("key directory created {}", keyDirectoryPath);
 		}
 
 		if (!new File(keyFilePath).exists()) {
@@ -74,6 +82,7 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
+			log.info("key file created {}", keyFilePath);
 
 
 			JSONArray jsonPublicJwk = new JSONArray().put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
@@ -87,6 +96,8 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
+			log.info("key file created {}", publicKeyFilePath);
+			reload = true;
 		}
 
 		if (!new File(encrKeyFilePath).exists()) {
@@ -110,6 +121,8 @@ public class KeyStoreConfig implements CommandLineRunner {
 				log.error("", e);
 			}
 
+			log.info("key file created {}", encrKeyFilePath);
+
 			JSONArray jsonPublicJwk = new JSONArray().put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
 
 			JSONObject pubKeysJsonObj = new JSONObject().put("keys", jsonPublicJwk);
@@ -120,6 +133,12 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
+			reload = true;
+			log.info("key file created {}", publicEncrKeyFilePath);
+		}
+
+		if (reload) {
+			oidcWrapper.reloadKeys();
 		}
 
 	}

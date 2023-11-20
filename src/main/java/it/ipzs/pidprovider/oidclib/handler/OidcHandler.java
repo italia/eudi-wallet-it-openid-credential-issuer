@@ -380,6 +380,10 @@ public class OidcHandler {
 		return credentialOptions;
 	}
 
+	public RelyingPartyOptions getRelyingPartyOptions() {
+		return options;
+	}
+
 	protected JSONObject doGetUserInfo(String state, String code)
 		throws OIDCException {
 
