@@ -15,6 +15,26 @@ springdoc:
   - it.ipzs.pidprovider.controller
   paths-to-exclude:
   - /cie/**
+management:
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include:
+        - metrics
+        - info
+        - health
+        - prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    metrics:
+      enabled: true 
 base-url: ${BASE_URL}
 auth-controller:
   redirect-url: ${BASE_URL}/callback
