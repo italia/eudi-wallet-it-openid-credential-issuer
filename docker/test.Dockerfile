@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 eclipse-temurin:17-jdk-alpine
+FROM --platform=linux/amd64 eclipse-temurin:17-jdk
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} /home/spring/app.jar
 
@@ -64,5 +64,4 @@ ENV CONF_FILE=${CONF_FILE}/application-docker.yml
 
 COPY docker/application-docker.yml ${CONF_FILE}
 
-EXPOSE 8080
 ENTRYPOINT ["java","-Dspring.profiles.active=docker", "-Dspring.config.location=${CONF_FILE}", "-Dlogging.file.name=/home/spring/log/app.log", "-Dspring.pidfile=/home/spring/pid/application.pid","-jar","/home/spring/app.jar"]
