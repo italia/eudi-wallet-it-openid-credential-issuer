@@ -24,13 +24,17 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import COSE.CoseException;
 import co.nstant.in.cbor.CborException;
+import it.ipzs.qeaaissuer.dto.CedDto;
 import it.ipzs.qeaaissuer.dto.CredentialDefinitionDto;
+import it.ipzs.qeaaissuer.dto.CredentialFormat;
 import it.ipzs.qeaaissuer.dto.CredentialResponse;
+import it.ipzs.qeaaissuer.dto.CredentialType;
 import it.ipzs.qeaaissuer.dto.EvidenceDto;
 import it.ipzs.qeaaissuer.dto.IssuerSignedDto;
 import it.ipzs.qeaaissuer.dto.IssuerSignedItemDto;
 import it.ipzs.qeaaissuer.dto.MdocCborDto;
 import it.ipzs.qeaaissuer.dto.MdocDocument;
+import it.ipzs.qeaaissuer.dto.PlaceOfBirthDto;
 import it.ipzs.qeaaissuer.dto.ProofRequest;
 import it.ipzs.qeaaissuer.dto.RecordDto;
 import it.ipzs.qeaaissuer.dto.SourceDto;
@@ -39,6 +43,7 @@ import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.util.AccessTokenUtil;
 import it.ipzs.qeaaissuer.util.CredentialProofUtil;
 import it.ipzs.qeaaissuer.util.DpopUtil;
+import it.ipzs.qeaaissuer.util.EDCUtil;
 import it.ipzs.qeaaissuer.util.SdJwtUtil;
 import it.ipzs.qeaaissuer.util.SessionUtil;
 import lombok.RequiredArgsConstructor;
@@ -56,14 +61,14 @@ public class CredentialService {
 	private final SdJwtUtil sdJwtUtil;
 	private final SessionUtil sessionUtil;
 	private final MdocCborService mdocCborService;
-
+	private final EDCUtil edcUtil;
 
 
 	public CredentialResponse generateSdCredentialResponse(String dpop, ProofRequest proof,
 			CredentialDefinitionDto definition)
 			throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
-		return CredentialResponse.builder().format("vc+sd-jwt")
+		return CredentialResponse.builder().format(CredentialFormat.SD_JWT.value())
 				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(dpop, proof, definition))
 				.build();
 
@@ -72,13 +77,14 @@ public class CredentialService {
 	public CredentialResponse generateMdocCborCredentialResponse(String dpop, ProofRequest proof,
 			CredentialDefinitionDto definition) throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
-		return CredentialResponse.builder().format("vc+mdoc-cbor").nonce(nonce).nonceExpiresIn(86400)
+		return CredentialResponse.builder().format(CredentialFormat.MDOC_CBOR.value()).nonce(nonce)
+				.nonceExpiresIn(86400)
 				.credential(generateMdocCborCredential(dpop, proof, definition)).build();
 	}
 
 	private String generateMdocCborCredential(String dpop, ProofRequest proof, CredentialDefinitionDto definition)
 			throws JOSEException, ParseException {
-		if (definition.getType().contains("mDL"))
+		if (definition.getType().contains(CredentialType.MDL.value()))
 			return generateMdocCborDLCredential(dpop, proof);
 		else {
 			log.error("MDOC-CBOR credential available only for mDL type request");
@@ -88,13 +94,16 @@ public class CredentialService {
 
 	private String generateSdJwtCredential(String dpop, ProofRequest proof, CredentialDefinitionDto definition)
 			throws JOSEException, ParseException {
-		if (definition.getType().contains("mDL"))
-			return generateSdJwtDLCredential(dpop, proof);
+
+		if (definition.getType().contains(CredentialType.MDL.value()))
+			return generateDLSdJwtCredential(dpop, proof);
+		else if (definition.getType().contains(CredentialType.EHIC.value()))
+			return generateEHICSdJwtCredential(dpop, proof);
 		else
 			return generateEDCSdJwtCredential(dpop, proof);
 	}
 
-	private String generateSdJwtDLCredential(String dpop, ProofRequest proof) throws JOSEException, ParseException {
+	private String generateDLSdJwtCredential(String dpop, ProofRequest proof) throws JOSEException, ParseException {
 
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
 		if (sessionInfo == null) {
@@ -186,7 +195,7 @@ public class CredentialService {
 		vc.setClaims(builder.build());
 		vc.setVerification(evBuilder.build());
 
-		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk, "mDL"),
+		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk, CredentialType.MDL.value()),
 				List.of(evDisclosure, nameClaim, familyClaim,
 				birthdateClaim, issuingAuthority, issuingCountry, issueDate, expiryDate, undistinguishingSign,
 				documentNumber, drivingPriv, portrait));
@@ -208,6 +217,7 @@ public class CredentialService {
 		Disclosure nameClaim;
 		Disclosure familyClaim;
 		Disclosure birthdateClaim;
+		Disclosure fiscalCodeClaim;
 		// FIXME test data
 		if (sessionInfo.getPidCredentialClaims() != null
 				&& sessionInfo.getPidCredentialClaims().get("given_name") != null) {
@@ -232,10 +242,20 @@ public class CredentialService {
 		} else {
 			birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate", "1980-10-01");
 		}
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("fiscal_code") != null) {
+			fiscalCodeClaim = sdJwtUtil.generateGenericDisclosure("fiscal_code",
+					sessionInfo.getPidCredentialClaims().get("fiscal_code"));
+		} else {
+			fiscalCodeClaim = sdJwtUtil.generateGenericDisclosure("fiscal_code", "TINIT-RSSMRA80A10H501A");
+		}
 
-		Disclosure serialClaim = sdJwtUtil.generateGenericDisclosure("serial_number", "12345678");
-		Disclosure accompanyRightClaim = sdJwtUtil.generateGenericDisclosure("accompanying_person_right", "1");
-		Disclosure expirationDateClaim = sdJwtUtil.generateGenericDisclosure("expiration_date", "2025-10-01");
+		CedDto edcInfo = edcUtil.getEDCInfo(fiscalCodeClaim.getClaimValue().toString());
+		Disclosure serialClaim = sdJwtUtil.generateGenericDisclosure("serial_number", edcInfo.getSerialeCarta());
+		Disclosure accompanyRightClaim = sdJwtUtil.generateGenericDisclosure("accompanying_person_right",
+				edcInfo.getDirittoAccompangatore().toString());
+		Disclosure expirationDateClaim = sdJwtUtil.generateGenericDisclosure("expiration_date",
+				edcInfo.getScadenzaCarta());
 
 		VerifiedClaims vc = new VerifiedClaims();
 
@@ -257,6 +277,7 @@ public class CredentialService {
 		builder.putSDClaim(nameClaim);
 		builder.putSDClaim(familyClaim);
 		builder.putSDClaim(birthdateClaim);
+		builder.putSDClaim(fiscalCodeClaim);
 		builder.putSDClaim(serialClaim);
 		builder.putSDClaim(accompanyRightClaim);
 		builder.putSDClaim(expirationDateClaim);
@@ -270,9 +291,9 @@ public class CredentialService {
 		vc.setClaims(builder.build());
 		vc.setVerification(evBuilder.build());
 
-		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk, "EuropeanDisabilityCard"), List.of(evDisclosure,
-				nameClaim, familyClaim,
-				birthdateClaim, serialClaim, expirationDateClaim, accompanyRightClaim));
+		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk, CredentialType.EDC.value()),
+				List.of(nameClaim, familyClaim, birthdateClaim, fiscalCodeClaim, serialClaim, expirationDateClaim,
+						accompanyRightClaim, evDisclosure));
 
 		String sdJwtString = sdjwt.toString();
 		// remove last tilde for SD-JWT draft 4 compliance
@@ -431,7 +452,121 @@ public class CredentialService {
 		return result;
 	}
 	
-	
+	private String generateEHICSdJwtCredential(String dpop, ProofRequest proof) throws JOSEException, ParseException {
+
+		SessionInfo sessionInfo = sessionUtil.getSessionInfo(proofUtil.getIssuer(proof.getJwt()));
+		if (sessionInfo == null) {
+			throw new RuntimeException("No client id known found");
+		}
+
+		JWK jwk = dpopUtil.getJwk(dpop);
+
+		Disclosure nameClaim;
+		Disclosure familyClaim;
+		Disclosure birthdateClaim;
+		Disclosure fiscalCodeClaim;
+		Disclosure placeOfBirthClaim;
+		// FIXME test data
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("given_name") != null) {
+			nameClaim = sdJwtUtil.generateGenericDisclosure("given_name",
+					sessionInfo.getPidCredentialClaims().get("given_name"));
+		} else {
+			nameClaim = sdJwtUtil.generateGenericDisclosure("given_name", "Mario");
+		}
+
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("family_name") != null) {
+			familyClaim = sdJwtUtil.generateGenericDisclosure("family_name",
+					sessionInfo.getPidCredentialClaims().get("family_name"));
+		} else {
+			familyClaim = sdJwtUtil.generateGenericDisclosure("family_name", "Rossi");
+		}
+
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("birthdate") != null) {
+			birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate",
+					sessionInfo.getPidCredentialClaims().get("birthdate"));
+		} else {
+			birthdateClaim = sdJwtUtil.generateGenericDisclosure("birthdate", "1980-10-01");
+		}
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("fiscal_code") != null) {
+			fiscalCodeClaim = sdJwtUtil.generateGenericDisclosure("fiscal_code",
+					sessionInfo.getPidCredentialClaims().get("fiscal_code"));
+		} else {
+			fiscalCodeClaim = sdJwtUtil.generateGenericDisclosure("fiscal_code", "TINIT-RSSMRA80A10H501A");
+		}
+
+		PlaceOfBirthDto tmp = PlaceOfBirthDto.builder().country("IT").locality("Rome").build();
+		if (sessionInfo.getPidCredentialClaims() != null
+				&& sessionInfo.getPidCredentialClaims().get("place_of_birth") != null) {
+			placeOfBirthClaim = sdJwtUtil.generateGenericDisclosure("place_of_birth",
+					sessionInfo.getPidCredentialClaims().get("place_of_birth"));
+		} else {
+			placeOfBirthClaim = sdJwtUtil.generateGenericDisclosure("place_of_birth", tmp);
+		}
+		
+		// mock data
+		Disclosure provinceClaim = sdJwtUtil.generateGenericDisclosure("province", tmp.getLocality());
+		Disclosure expiryDateClaim = sdJwtUtil.generateGenericDisclosure("expiry_date", "2025-02-22");
+		Disclosure sexClaim = sdJwtUtil.generateGenericDisclosure("sex", "M");
+		// TEAM fields
+		Disclosure nationClaim = sdJwtUtil.generateGenericDisclosure("nation", tmp.getCountry());
+		Disclosure documentNumberClaim = sdJwtUtil.generateGenericDisclosure("document_number_team",
+				"80380000000000000001");
+		Disclosure institutionNumberClaim = sdJwtUtil.generateGenericDisclosure("institution_number_team", "500001");
+
+
+		VerifiedClaims vc = new VerifiedClaims();
+
+		EvidenceDto ev = new EvidenceDto();
+		ev.setType("electronic_record");
+
+		RecordDto rec = new RecordDto();
+		rec.setType("https://eudi.wallet.pdnd.gov.it");
+		SourceDto src = new SourceDto();
+		src.setCountry_code("IT");
+		src.setOrganization_id("urn:eudi:it:organization_id:ipa_code:QLHCFC");
+		src.setOrganization_name("Ragioneria Generale dello Stato");
+
+		rec.setSource(src);
+
+		ev.setRecord(rec);
+
+		SDObjectBuilder builder = new SDObjectBuilder();
+		builder.putSDClaim(nameClaim);
+		builder.putSDClaim(familyClaim);
+		builder.putSDClaim(birthdateClaim);
+		builder.putSDClaim(fiscalCodeClaim);
+		builder.putSDClaim(placeOfBirthClaim);
+		builder.putSDClaim(provinceClaim);
+		builder.putSDClaim(expiryDateClaim);
+		builder.putSDClaim(sexClaim);
+		builder.putSDClaim(nationClaim);
+		builder.putSDClaim(documentNumberClaim);
+		builder.putSDClaim(institutionNumberClaim);
+
+		SDObjectBuilder evBuilder = new SDObjectBuilder();
+		evBuilder.putClaim("assurance_level", "high");
+		evBuilder.putClaim("trust_framework", "eidas");
+		Disclosure evDisclosure = sdJwtUtil.generateGenericDisclosure("evidence", List.of(ev));
+		evBuilder.putSDClaim(evDisclosure);
+
+		vc.setClaims(builder.build());
+		vc.setVerification(evBuilder.build());
+
+		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk, CredentialType.EHIC.value()),
+				List.of(nameClaim, familyClaim, birthdateClaim, fiscalCodeClaim, placeOfBirthClaim, provinceClaim,
+						expiryDateClaim, sexClaim, nationClaim, documentNumberClaim, institutionNumberClaim,
+						evDisclosure));
+
+		String sdJwtString = sdjwt.toString();
+		// remove last tilde for SD-JWT draft 4 compliance
+		return sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
+
+	}
+
 	public void checkDpop(String dpop) {
 		try {
 			JWTClaimsSet claimsSet = dpopUtil.parse(dpop);

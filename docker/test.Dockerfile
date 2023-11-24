@@ -2,10 +2,10 @@ FROM --platform=linux/amd64 eclipse-temurin:17-jdk
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} /home/spring/app.jar
 
-ENV SERVER_PORT=8080
+ENV SB_SERVER_PORT=8080
 
 #base url or the domain that expose this container
-ENV BASE_URL=http://localhost:${SERVER_PORT}
+ENV BASE_URL=http://localhost:${SB_SERVER_PORT}
 
 #similar to base url, i.e. https://api.eudi-wallet-it-issuer.it
 ENV CLIENT_URL=${BASE_URL}
@@ -17,10 +17,12 @@ ENV HOST_TRUST_ANCHOR=demo.federation.eudi.wallet.developers.italia.it
 ENV HOST_CIE_PROVIDER=127.0.0.1:8001
 
 #host of the relying party, i.e.api.eudi-wallet-it-issuer.it
-ENV HOST_RELYING_PARTY=127.0.0.1:${SERVER_PORT}
+ENV HOST_RELYING_PARTY=127.0.0.1:${SB_SERVER_PORT}
 
 #path to the keys
 ENV KEY_ROOT_PATH=${HOME}/key
+
+ENV CONF_ROOT_PATH=${HOME}/sb_conf
 
 #path to RP jwk
 ENV RP_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-qeea-key-jwk.json
@@ -54,14 +56,24 @@ ENV SPID_PROVIDER_SUB=https://$HOST_TRUST_ANCOR/oidc/op/
 ENV CIE_PROVIDER_SUB=https://$HOST_CIE_PROVIDER/oidc/op/
 
 #OpenId Credential Issuer, i.e. i.e. https://api.eudi-wallet-it-issuer.it
-ENV OID_CI_CRED_ISS=127.0.0.1:${SERVER_PORT}
+ENV OID_CI_CRED_ISS=127.0.0.1:${SB_SERVER_PORT}
 
 #Credential issuer JWK path
 ENV OID_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-pp-key-jwk.json
 
 #external yml for this service
-ENV CONF_FILE=${CONF_FILE}/application-docker.yml
+ENV CONF_FILE=${CONF_ROOT_PATH}/application.yml
 
-COPY docker/application-docker.yml ${CONF_FILE}
+ENV LOGBACK_FILE=${CONF_ROOT_PATH}/logback.xml
 
-ENTRYPOINT ["java","-Dspring.profiles.active=docker", "-Dspring.config.location=${CONF_FILE}", "-Dlogging.file.name=/home/spring/log/app.log", "-Dspring.pidfile=/home/spring/pid/application.pid","-jar","/home/spring/app.jar"]
+#move conf yml
+COPY docker/application.yml ${CONF_FILE}
+
+#add external jar for EDC service
+ADD edc-ws edc-ws
+
+COPY docker/start.sh start.sh
+
+COPY docker/logback.xml ${LOGBACK_FILE}
+
+ENTRYPOINT ["sh","/start.sh"]

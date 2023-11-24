@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 
 import it.ipzs.qeaaissuer.dto.CredentialDefinitionDto;
+import it.ipzs.qeaaissuer.dto.CredentialFormat;
 import it.ipzs.qeaaissuer.dto.CredentialResponse;
 import it.ipzs.qeaaissuer.dto.ParResponse;
 import it.ipzs.qeaaissuer.dto.ProofRequest;
@@ -265,7 +266,7 @@ public class AuthController {
 		}
 		CredentialResponse response;
 		try {
-			if ("vc+sd-jwt".equals(format)) {
+			if (CredentialFormat.SD_JWT.value().equals(format)) {
 				response = credentialService.generateSdCredentialResponse(dpop, proofReq, credDefinition);
 			} else {
 				response = credentialService.generateMdocCborCredentialResponse(dpop, proofReq, credDefinition);

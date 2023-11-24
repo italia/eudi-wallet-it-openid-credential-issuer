@@ -32,11 +32,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class PidCredentialService {
 
-	@Value("${pid-provider.url:https://api.eudi-wallet-it-pid-provider.it/ci/.well-known/openid-federation?format=json}")
+	@Value("${pid-provider.url}")
 	private String pidProviderConfig;
 
 	private static final List<String> CLAIMS_REQUIRED = List.of("given_name", "family_name", "birthdate",
-			"place_of_birth");
+			"place_of_birth, fiscal_code");
 
 	public void validatePidCredential(String pidCredential) throws ParseException, JOSEException {
 		SDJWT sdJwt = SDJWT.parse(pidCredential);
@@ -82,6 +82,10 @@ public class PidCredentialService {
 	}
 
 	public Map<String, Object> extractPidCredentialInfo(String pidCredential) {
+		// align sd-jwt with the expected format
+		if (!pidCredential.endsWith("~")) {
+			pidCredential = pidCredential + "~";
+		}
 		SDJWT sdJwt = SDJWT.parse(pidCredential);
 		List<Disclosure> disclosures = sdJwt.getDisclosures();
 		return disclosures.stream().filter(ds -> CLAIMS_REQUIRED.contains(ds.getClaimName()))

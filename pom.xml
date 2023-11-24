@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>qeaa-issuer</artifactId>
-	<version>1.4.1</version>
+	<version>1.4.2</version>
 	<name>qeaa-issuer</name>
 	<description>QEAA Issuer</description>
 	<properties>
@@ -21,11 +21,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-	  <dependency>
-		   <groupId>io.micrometer</groupId>
-		   <artifactId>micrometer-registry-prometheus</artifactId>
-		   <scope>runtime</scope>
-	  </dependency>		
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -122,21 +122,20 @@
 			<version>0.01.02</version>
 		</dependency>
 		<dependency>
-		    <groupId>com.augustcellars.cose</groupId>
-		    <artifactId>cose-java</artifactId>
-		    <version>1.1.0</version>
+			<groupId>com.augustcellars.cose</groupId>
+			<artifactId>cose-java</artifactId>
+			<version>1.1.0</version>
 		</dependency>
 		<dependency>
-		  <groupId>com.upokecenter</groupId>
-		  <artifactId>cbor</artifactId>
-		  <version>4.5.2</version>
+			<groupId>com.upokecenter</groupId>
+			<artifactId>cbor</artifactId>
+			<version>4.5.2</version>
 		</dependency>
 		<dependency>
-		    <groupId>org.bouncycastle</groupId>
-		    <artifactId>bcprov-jdk18on</artifactId>
-		    <version>1.77</version>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.77</version>
 		</dependency>
-
 	</dependencies>
 	<repositories>
 		<repository>

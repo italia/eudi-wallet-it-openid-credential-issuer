@@ -23,6 +23,7 @@ import it.ipzs.qeaaissuer.oidclib.callback.RelyingPartyLogoutCallback;
 import it.ipzs.qeaaissuer.oidclib.exception.OIDCException;
 import it.ipzs.qeaaissuer.oidclib.handler.OidcHandler;
 import it.ipzs.qeaaissuer.oidclib.model.CredentialDefinition;
+import it.ipzs.qeaaissuer.oidclib.model.CredentialEHICSubject;
 import it.ipzs.qeaaissuer.oidclib.model.CredentialField;
 import it.ipzs.qeaaissuer.oidclib.model.CredentialMDLSubject;
 import it.ipzs.qeaaissuer.oidclib.model.CredentialSubject;
@@ -269,6 +270,9 @@ public class OidcWrapper {
 		CredentialType cedSdJwt = generateSdJwtCEDCredType();
 		credentialSupported.add(cedSdJwt);
 
+		CredentialType ehicSdJwt = generateSdJwtEHICCredType();
+		credentialSupported.add(ehicSdJwt);
+
 		CredentialType mDLSdJwt = generateMDLCredType("vc+sd-jwt");
 		credentialSupported.add(mDLSdJwt);
 
@@ -278,10 +282,104 @@ public class OidcWrapper {
 		return credentialSupported;
 	}
 
+	private CredentialType generateSdJwtEHICCredType() {
+
+		CredentialType cred = new CredentialType();
+
+		cred.setId(it.ipzs.qeaaissuer.dto.CredentialType.EHIC.value().toLowerCase() + "."
+				+ oidcConfig.getOpenidCredentialIssuer().getId());
+
+		cred.setFormat("vc+sd-jwt");
+		DisplayConf d1 = DisplayConf.builder().name("QEAA Issuer").locale("it-IT").background_color("#12107c")
+				.text_color("#FFFFFF")
+				.logo(LogoConf.builder().url(
+						"https://" + oidcConfig.getOpenidCredentialIssuer().getCredentialIssuer() + "/public/logo.svg")
+						.alt_text("logo").build())
+				.build();
+
+		DisplayConf d2 = DisplayConf.builder().name("QEAA Issuer").locale("en-US").background_color("#12107c")
+				.text_color("#FFFFFF")
+				.logo(LogoConf.builder().url(
+						"https://" + oidcConfig.getOpenidCredentialIssuer().getCredentialIssuer() + "/public/logo.svg")
+						.alt_text("logo").build())
+				.build();
+		cred.setDisplay(List.of(d1, d2));
+
+		CredentialDefinition credDef = new CredentialDefinition();
+		credDef.getType().add(it.ipzs.qeaaissuer.dto.CredentialType.EHIC.value());
+		CredentialEHICSubject credSubj = new CredentialEHICSubject();
+		credSubj.setGiven_name(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Nome").locale("it-IT").build(),
+						DisplayConf.builder().name("First Name").locale("en-US").build()))
+				.build());
+
+		credSubj.setFamily_name(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Cognome").locale("it-IT").build(),
+						DisplayConf.builder().name("Family Name").locale("en-US").build()))
+				.build());
+
+		credSubj.setBirthdate(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Data di Nascita").locale("it-IT").build(),
+						DisplayConf.builder().name("Date of Birth").locale("en-US").build()))
+				.build());
+
+		credSubj.setPlace_of_birth(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Luogo di Nascita").locale("it-IT").build(),
+						DisplayConf.builder().name("Place of Birth").locale("en-US").build()))
+				.build());
+
+		credSubj.setFiscal_code(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Codice Fiscale").locale("it-IT").build(),
+						DisplayConf.builder().name("Fiscal Code").locale("en-US").build()))
+				.build());
+
+		credSubj.setProvince(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Provincia").locale("it-IT").build(),
+						DisplayConf.builder().name("Province").locale("en-US").build()))
+				.build());
+
+		credSubj.setSex(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Sesso").locale("it-IT").build(),
+						DisplayConf.builder().name("Sex").locale("en-US").build()))
+				.build());
+
+		credSubj.setExpiry_date(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Data di Scadenza").locale("it-IT").build(),
+						DisplayConf.builder().name("Expiry Date").locale("en-US").build()))
+				.build());
+
+		credSubj.setNation(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Nazione").locale("it-IT").build(),
+						DisplayConf.builder().name("Nation").locale("en-US").build()))
+				.build());
+
+		credSubj.setDocument_number_team(
+				CredentialField.builder().mandatory(true)
+						.display(List.of(
+								DisplayConf.builder().name("Numero identificativo della tessera (TEAM)").locale("it-IT")
+										.build(),
+								DisplayConf.builder().name("Document Number (TEAM)").locale("en-US").build()))
+						.build());
+
+		credSubj.setInstitution_number_team(CredentialField.builder().mandatory(true)
+				.display(List.of(
+						DisplayConf.builder().name("Numero identificativo dell'istituzione (TEAM)").locale("it-IT")
+								.build(),
+						DisplayConf.builder().name("Institution Number (TEAM)").locale("en-US").build()))
+				.build());
+
+		credDef.setCredentialSubject(credSubj);
+
+		cred.setCredential_definition(credDef);
+		return cred;
+
+	}
+
 	private CredentialType generateSdJwtCEDCredType() {
 		CredentialType cred = new CredentialType();
 
-		cred.setId("europeandisabilitycard." + oidcConfig.getOpenidCredentialIssuer().getId());
+		cred.setId(it.ipzs.qeaaissuer.dto.CredentialType.EDC.value().toLowerCase() + "."
+				+ oidcConfig.getOpenidCredentialIssuer().getId());
 
 		cred.setFormat("vc+sd-jwt");
 		DisplayConf d1 = DisplayConf.builder().name("QEAA Issuer").locale("it-IT").background_color("#12107c")
@@ -301,7 +399,7 @@ public class OidcWrapper {
 		cred.setDisplay(List.of(d1,d2));
 
 		CredentialDefinition credDef = new CredentialDefinition();
-		credDef.getType().add("EuropeanDisabilityCard");
+		credDef.getType().add(it.ipzs.qeaaissuer.dto.CredentialType.EDC.value());
 		CredentialSubject credSubj = new CredentialSubject();
 		credSubj.setGiven_name(CredentialField.builder()
 				.mandatory(true)
@@ -343,7 +441,8 @@ public class OidcWrapper {
 	private CredentialType generateMDLCredType(String format) {
 		CredentialType cred = new CredentialType();
 
-		cred.setId("mdl." + oidcConfig.getOpenidCredentialIssuer().getId());
+		cred.setId(it.ipzs.qeaaissuer.dto.CredentialType.MDL.value().toLowerCase() + "."
+				+ oidcConfig.getOpenidCredentialIssuer().getId());
 
 		cred.setFormat(format);
 		DisplayConf d1 = DisplayConf.builder().name("QEAA Issuer").locale("it-IT").background_color("#12107c")
@@ -362,7 +461,7 @@ public class OidcWrapper {
 		cred.setDisplay(List.of(d1, d2));
 
 		CredentialDefinition credDef = new CredentialDefinition();
-		credDef.getType().add("mDL");
+		credDef.getType().add(it.ipzs.qeaaissuer.dto.CredentialType.MDL.value());
 		CredentialMDLSubject credSubj = new CredentialMDLSubject();
 		credSubj.setGiven_name(CredentialField.builder().mandatory(true)
 				.display(List.of(DisplayConf.builder().name("Nome").locale("it-IT").build(),

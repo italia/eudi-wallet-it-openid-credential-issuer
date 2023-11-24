@@ -65,7 +65,7 @@ class CredentialServiceTest {
 	public void setup() {
 		MockitoAnnotations.openMocks(this);
 		credentialService = new CredentialService(srService, dpopUtil, accessTokenUtil, proofUtil, sdJwtUtil,
-				sessionUtil, null);
+				sessionUtil, null, null);
 	}
 
 	@Test

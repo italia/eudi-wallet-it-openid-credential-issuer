@@ -18,29 +18,29 @@ can maintain their privacy and identity over the internet.
 
    `mvn clean package`
   
-2. create Docker image with test.Dockerfile, with required environment variables
+2. create Docker image with test.Dockerfile, or with docker/Dockerfile but with required environment variables resolved in application.yml
 
    `docker build -t qeaa-issuer:1.0 -f docker/test.Dockerfile .`
    
 3. otherwise, configure the following environment variables for the docker image
 
 ```
-	ENV SERVER_PORT=8080
+	ENV SB_SERVER_PORT=8080
 	
 	#base url or the domain that expose this container
-	ENV BASE_URL=http://localhost:${SERVER_PORT}
+	ENV BASE_URL=http://localhost:${SB_SERVER_PORT}
 	
 	#similar to base url
 	ENV CLIENT_URL=${BASE_URL}
 	
-	#host of the trust anchor
-	ENV HOST_TRUST_ANCHOR=127.0.0.1:8002
+	#host of the trust anchor, i.e. demo.federation.eudi.wallet.developers.italia.it
+	ENV HOST_TRUST_ANCHOR=demo.federation.eudi.wallet.developers.italia.it
 	
 	#host of the CIE provider
 	ENV HOST_CIE_PROVIDER=127.0.0.1:8001
 	
 	#host of the relying party
-	ENV HOST_RELYING_PARTY=api.eudi-wallet-it-issuer.it
+	ENV HOST_RELYING_PARTY=${BASE_URL}
 	
 	#path to the keys
 	ENV KEY_ROOT_PATH=${HOME}/key
@@ -76,8 +76,8 @@ can maintain their privacy and identity over the internet.
 	#optional
 	ENV CIE_PROVIDER_SUB=https://$HOST_CIE_PROVIDER/oidc/op/
 	
-	#OpenId Credential Issuer, i.e. i.e. https://api.eudi-wallet-it-issuer.it
-	ENV OID_CI_CRED_ISS=https://api.eudi-wallet-it-issuer.it
+	#OpenId Credential Issuer
+	ENV OID_CI_CRED_ISS=${BASE_URL}
 	
 	#Credential issuer JWK path
 	ENV OID_JWK_FILE_PATH=${KEY_ROOT_PATH}/eudi-pp-key-jwk.json
@@ -86,10 +86,7 @@ can maintain their privacy and identity over the internet.
 	ENV CONF_FILE=${CONF_FILE}/application-docker.yml
 ```
 
-4. adjust ENTRYPOINT to load external data i.e. logback
-
-	`ENTRYPOINT ["java", "-Dlogback.configurationFile=/path/to/config.xml" ,"-Dspring.profiles.active=docker", "-Dspring.config.location=${CONF_FILE}", "-Dlogging.file.name=/home/spring/log/app.log", "-Dspring.pidfile=/home/spring/pid/application.pid","-jar","/home/spring/app.jar"]`
-
+4. adjust start.sh to load external data i.e. logback
 
 5. run the image created, i.e. 
 
@@ -99,7 +96,6 @@ can maintain their privacy and identity over the internet.
 
 	`http://localhost:8080/admin/federation/home`
  
-
 7. verify that the configuration is completed:
 
 	`http://localhost:8080/rp/.well-known/openid-federation?format=json `

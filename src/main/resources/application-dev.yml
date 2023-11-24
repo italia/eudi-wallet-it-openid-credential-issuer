@@ -6,6 +6,26 @@ spring:
       enabled: ALWAYS
 server:
   forward-headers-strategy: framework
+management:
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include:
+        - metrics
+        - info
+        - health
+        - prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
 springdoc:
   cache:
    disabled: true
@@ -29,6 +49,10 @@ keys:
   public-jwk-set-path: ${keys.directory-path}/eudi-pp-public-jwk.json
   encr-path: ${keys.directory-path}/eudi-encr-rp-key-jwk.json
   public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-rp-public-key-jwk.json
+pid-provider: #pid provider ES
+  url: http://127.0.0.1:8081/ci/.well-known/openid-federation?format=json
+edc-service:
+  url: http://localhost:9898/client/get/ 
 oidc:
    hosts:
       trust-anchor: 127.0.0.1
