@@ -7,7 +7,7 @@ spring:
 server:
   forward-headers-strategy: framework
   max-http-request-header-size: 3MB
-  port: ${SERVER_PORT}
+  port: ${SB_SERVER_PORT}
 springdoc:
   cache:
    disabled: true
@@ -44,8 +44,7 @@ consent-controller:
   accepted-url: ${BASE_URL}/cie/accepted
   callback-url: ${BASE_URL}/callback
 logging:
-  level:
-    '[it.ipzs.pidprovider.controller.AuthController]': WARN
+  config: ${LOGBACK_FILE}
 keys:
   directory-path: ${KEY_ROOT_PATH}
   path: ${keys.directory-path}/eudi-pp-key-jwk.json

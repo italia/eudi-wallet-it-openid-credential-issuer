@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>it-pid-provider</artifactId>
-	<version>1.3.2</version>
+	<version>1.3.3</version>
 	<name>it-pid-provider</name>
 	<description>IT PID Provider</description>
 	<properties>

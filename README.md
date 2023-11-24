@@ -91,7 +91,7 @@ In this release there is a mock authentication: the credentials are `user`/`pass
 
 5. run the image created, i.e. 
 
-	`docker run -p 8080:8080 qeaa-issuer:1.0`
+	`docker run -p 8080:8080 pid-provider:1.0`
 
 6. if the first run, call the jwk creation endpoint:
 
@@ -107,6 +107,10 @@ In this release there is a mock authentication: the credentials are `user`/`pass
 [EUDI IT Wallet Pid Provider - Docker Hub Image Repository](https://hub.docker.com/r/ipzssviluppo/eudi-it-wallet-pid-provider)
 
 # Updates
+
+v.1.3.3. - fix Docker config
+
+v.1.3.2 - fix CVE, actuator config
 
 v.1.3.1 - fix Docker config
 
