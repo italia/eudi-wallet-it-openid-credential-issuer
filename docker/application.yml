@@ -115,4 +115,4 @@ pid-provider: #pid provider ES
 edc-service:
   url: http://127.0.0.1:9898/client/get/ 
 logging:
-  config: ${LOGBACK_FILE}
+  config: /home/spring/logback.xml
