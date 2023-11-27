@@ -44,7 +44,7 @@ consent-controller:
   accepted-url: ${BASE_URL}/cie/accepted
   callback-url: ${BASE_URL}/callback
 logging:
-  config: ${LOGBACK_FILE}
+  config: /home/spring/logback.xml
 keys:
   directory-path: ${KEY_ROOT_PATH}
   path: ${keys.directory-path}/eudi-pp-key-jwk.json
