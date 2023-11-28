@@ -1,5 +1,15 @@
-FROM --platform=linux/amd64 eclipse-temurin:17-jdk
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} /home/spring/app.jar
-
-ENTRYPOINT ["java", "-Dspring.config.location=/home/spring/application.yml", "-Dspring.pidfile=/home/spring/pid/application.pid", "-jar", "/home/spring/app.jar"]
+FROM openjdk:17-alpine
+ 
+RUN addgroup -g 1000 java && adduser -G java -u 1000 -S java -h /app
+ 
+WORKDIR /app
+ 
+COPY --chown=1000:1000 target/*.jar app.jar
+ 
+ENV TZ=Europe/Rome
+ 
+EXPOSE 8080
+ 
+USER java
+ 
+CMD ["java", "-Dspring.config.location=/appconfig/application.yml", "-Dspring.pidfile=/app/application.pid", "-jar", "/app/app.jar", "-Xms256m", "-Xmx512m"]
