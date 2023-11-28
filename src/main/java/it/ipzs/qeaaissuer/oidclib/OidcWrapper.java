@@ -222,8 +222,8 @@ public class OidcWrapper {
 		String trustMarks = readFile(
 				oidcConfig.getRelyingParty().getTrustMarksFilePath());
 
-		logger.info("final jwk: {}", jwk);
-		logger.info("final trust_marks: {}", trustMarks);
+		logger.debug("final jwk: {}", jwk);
+		logger.debug("final trust_marks: {}", trustMarks);
 
 		RelyingPartyOptions options = new RelyingPartyOptions()
 				.setDefaultTrustAnchor(oidcConfig.getDefaultTrustAnchor())
@@ -525,15 +525,16 @@ public class OidcWrapper {
 	}
 
 	private String readFile(String filePath) {
-		try {
-			File file = new File(filePath);
+		if (filePath != null) {
+			try {
+				File file = new File(filePath);
 
-			if (file.isFile() && file.canRead()) {
-				return Files.readString(file.toPath());
+				if (file.isFile() && file.canRead()) {
+					return Files.readString(file.toPath());
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 			}
-		}
-		catch (Exception e) {
-			logger.error(e.getMessage(), e);
 		}
 
 		return "";
@@ -546,7 +547,7 @@ public class OidcWrapper {
 		this.oidcHandler.getCredentialOptions().setJwk(credJwk);
 		this.oidcHandler.getRelyingPartyOptions().setJWK(jwk);
 		this.oidcHandler.getRelyingPartyOptions().setEncrJWK(encrJwk);
-		logger.info("key reloaded!");
+		logger.debug("key reloaded!");
 	}
 
 }

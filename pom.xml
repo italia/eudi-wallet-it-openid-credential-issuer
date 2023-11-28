@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>qeaa-issuer</artifactId>
-	<version>1.4.2</version>
+	<version>1.4.3</version>
 	<name>qeaa-issuer</name>
 	<description>QEAA Issuer</description>
 	<properties>
@@ -20,11 +20,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-registry-prometheus</artifactId>
-			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
