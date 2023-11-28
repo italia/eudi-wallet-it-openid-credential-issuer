@@ -6,26 +6,6 @@ spring:
       enabled: ALWAYS
 server:
   forward-headers-strategy: framework
-management:
-  health:
-    livenessstate:
-      enabled: true
-    readinessstate:
-      enabled: true
-  endpoints:
-    web:
-      exposure:
-        include:
-        - metrics
-        - info
-        - health
-        - prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true
-    metrics:
-      enabled: true
 springdoc:
   cache:
    disabled: true
