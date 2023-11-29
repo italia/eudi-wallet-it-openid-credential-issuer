@@ -44,7 +44,6 @@ import COSE.HeaderKeys;
 import COSE.Message;
 import COSE.MessageTag;
 import COSE.OneKey;
-import co.nstant.in.cbor.CborException;
 import it.ipzs.qeaaissuer.dto.IssuerSignedDto;
 import it.ipzs.qeaaissuer.dto.IssuerSignedItemDto;
 import it.ipzs.qeaaissuer.dto.MdocCborDto;
@@ -63,7 +62,7 @@ public class MdocCborService {
 	private final OidcWrapper oidcWrapper;
 
 	public String generateMdocCbor(MdocCborDto cborDto, JWK deviceKey)
-			throws CborParseException, IOException, CborException, CoseException, CborConversionException,
+			throws CborParseException, IOException, CoseException, CborConversionException,
 			NoSuchAlgorithmException, ParseException, JOSEException {
 		List<String> dateParams = List.of("birth_date", "issue_date", "expiry_date");
 		ObjectMapper mapper = new CBORMapper();
@@ -225,7 +224,7 @@ public class MdocCborService {
 	}
 
 	public MdocCborDto parseMdocCbor(String hexCborTest)
-			throws IOException, CborException, CborParseException, CoseException {
+			throws IOException, CborParseException, CoseException {
 
 		ObjectMapper mapper = new CBORMapper();
 

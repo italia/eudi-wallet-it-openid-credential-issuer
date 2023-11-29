@@ -23,7 +23,6 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import COSE.CoseException;
-import co.nstant.in.cbor.CborException;
 import it.ipzs.qeaaissuer.dto.CedDto;
 import it.ipzs.qeaaissuer.dto.CredentialDefinitionDto;
 import it.ipzs.qeaaissuer.dto.CredentialFormat;
@@ -445,8 +444,8 @@ public class CredentialService {
 
 		try {
 			result = mdocCborService.generateMdocCbor(tmp, jwk);
-		} catch (CborParseException | CborConversionException | NoSuchAlgorithmException | IOException | CborException
-				| CoseException | JOSEException e) {
+		} catch (CborParseException | CborConversionException | NoSuchAlgorithmException | IOException | CoseException
+				| JOSEException e) {
 			log.error("", e);
 		}
 		return result;

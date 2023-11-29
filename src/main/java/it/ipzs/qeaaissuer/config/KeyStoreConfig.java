@@ -55,14 +55,14 @@ public class KeyStoreConfig implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		log.info("Running KeyStore...");
+		log.debug("Running KeyStore...");
 		boolean reload = false;
 		Path keyPath = Paths.get(keyDirectoryPath);
 		if (!Files.exists(keyPath)) {
 			Files.createDirectory(keyPath);
 			reload = true;
 		} else {
-			log.info("{} path exists", keyDirectoryPath);
+			log.debug("{} path exists", keyDirectoryPath);
 		}
 
 		if (!new File(keyFilePath).exists()) {
@@ -100,7 +100,7 @@ public class KeyStoreConfig implements CommandLineRunner {
 			}
 			reload = true;
 		} else {
-			log.info("{} path exists", keyFilePath);
+			log.debug("{} path exists", keyFilePath);
 		}
 
 		if (!new File(encrKeyFilePath).exists()) {
@@ -137,7 +137,7 @@ public class KeyStoreConfig implements CommandLineRunner {
 			}
 			reload = true;
 		} else {
-			log.info("{} path exists", encrKeyFilePath);
+			log.debug("{} path exists", encrKeyFilePath);
 		}
 
 		if (reload) {
