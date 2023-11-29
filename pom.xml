@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>qeaa-issuer</artifactId>
-	<version>1.4.4</version>
+	<version>1.4.5</version>
 	<name>qeaa-issuer</name>
 	<description>QEAA Issuer</description>
 	<properties>
@@ -101,11 +101,6 @@
 			<groupId>co.nstant.in</groupId>
 			<artifactId>cbor</artifactId>
 			<version>0.9</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.cose</groupId>
-			<artifactId>cose</artifactId>
-			<version>20230908</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.iot.cbor</groupId>
