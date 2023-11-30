@@ -27,5 +27,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
+    - name: Install local libraries
+      run: mvn install:install-file -Dfile=./lib/forked-local/cose-java-forked-1.1.1.jar -DgroupId=com.augustcellars.cose -DartifactId=cose-java-forked -Dversion=1.1.1 -Dpackaging=jar -DgeneratePom=true        
     - name: Build with Maven
-      run: mvn -B initialize test
+      run: mvn -B test
