@@ -130,6 +130,7 @@
 							<artifactId>cose-java-forked</artifactId>
 							<version>1.1.1</version>
 							<packaging>jar</packaging>
+							<pomFile>${project.basedir}/lib/forked-local/cose-java-forked-1.1.1.pom</pomFile>
 						</configuration>
 					</execution>
 				</executions>
