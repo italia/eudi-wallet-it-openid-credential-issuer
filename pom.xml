@@ -113,12 +113,6 @@
 			<version>1.77</version>
 		</dependency>
 	</dependencies>
-	<repositories>
-		<repository>
-			<id>google-repo</id>
-			<url>https://maven.google.com/</url>
-		</repository>
-	</repositories>
 	<build>
 		<plugins>
 			<plugin>
