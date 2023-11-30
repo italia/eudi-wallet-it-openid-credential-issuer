@@ -9,13 +9,12 @@
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>qeaa-issuer</artifactId>
-	<version>1.4.6</version>
+	<version>1.4.7</version>
 	<name>qeaa-issuer</name>
 	<description>QEAA Issuer</description>
 	<properties>
 		<java.version>17</java.version>
 		<snakeyaml.version>2.0</snakeyaml.version>
-		<bcprov-jdk15on.version>1.7.0</bcprov-jdk15on.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -105,20 +104,14 @@
 		</dependency>
 		<dependency>
 			<groupId>com.augustcellars.cose</groupId>
-			<artifactId>cose-java</artifactId>
-			<version>1.1.0</version>
+			<artifactId>cose-java-forked</artifactId>
+			<version>1.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
 			<version>1.77</version>
 		</dependency>
-		<dependency>
-		    <groupId>org.bouncycastle</groupId>
-		    <artifactId>bcprov-jdk15on</artifactId>
-		    <version>1.70</version>
-		</dependency>
-
 	</dependencies>
 	<repositories>
 		<repository>
@@ -128,6 +121,25 @@
 	</repositories>
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<file>${project.basedir}/lib/forked-local/cose-java-forked-1.1.1.jar</file>
+							<groupId>com.augustcellars.cose</groupId>
+							<artifactId>cose-java-forked</artifactId>
+							<version>1.1.1</version>
+							<packaging>jar</packaging>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
