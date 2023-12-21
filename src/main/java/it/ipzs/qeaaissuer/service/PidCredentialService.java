@@ -18,12 +18,11 @@ import org.springframework.web.client.RestTemplate;
 import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.SignedJWT;
 
+import io.jsonwebtoken.Jwts;
 import it.ipzs.qeaaissuer.exception.PidCredentialVerifyException;
 import it.ipzs.qeaaissuer.exception.PidProviderConfigurationRetrievalException;
 import lombok.RequiredArgsConstructor;
@@ -43,14 +42,16 @@ public class PidCredentialService {
 	public void validatePidCredential(String pidCredential) throws ParseException, JOSEException {
 		SDJWT sdJwt = SDJWT.parse(pidCredential);
 		String credentialJwtString = sdJwt.getCredentialJwt();
-		SignedJWT signedJwt = SignedJWT.parse(credentialJwtString);
+
 		RSAKey pidJwk = retrievePidSigningKey();
-		JWSVerifier verifier = new RSASSAVerifier(pidJwk);
-		if (Boolean.FALSE.equals(signedJwt.verify(verifier))) {
-			log.error("PID Credential JWT not verified");
+
+		try {
+			Jwts.parser().verifyWith(pidJwk.toPublicKey()).build().parse(credentialJwtString);
+
+		} catch (Exception e) {
+			log.error("PID Credential JWT not verified", e);
 			throw new PidCredentialVerifyException("PID Credential JWT not verified");
 		}
-
 	}
 
 	public RSAKey retrievePidSigningKey() throws ParseException {
