@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.stereotype.Component;
 
+import it.ipzs.pidprovider.exception.SessionInfoByStateNotFoundException;
 import it.ipzs.pidprovider.model.SessionInfo;
 
 
@@ -24,7 +25,7 @@ public class SessionUtil {
 
 	public SessionInfo getSessionInfoByState(String state) {
 		return sessionMap.values().stream().filter(si -> si.getState().equals(state)).findFirst()
-				.orElseThrow(() -> new IllegalArgumentException("No state found"));
+				.orElseThrow(() -> new SessionInfoByStateNotFoundException("No state found"));
 	}
 
 	public void removeSessionInfo(SessionInfo sessionInfo) {

@@ -8,6 +8,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -22,6 +23,11 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.ipzs.pidprovider.dto.TokenResponse;
+import it.ipzs.pidprovider.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.pidprovider.exception.PkceCodeValidationException;
+import it.ipzs.pidprovider.exception.SessionInfoByClientIdNotFoundException;
+import it.ipzs.pidprovider.exception.TokenCodeValidationException;
+import it.ipzs.pidprovider.exception.TokenDpopParsingException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.DpopUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
@@ -36,6 +42,9 @@ public class TokenService {
 	private final SRService srService;
 	private final DpopUtil dpopUtil;
 	private final SessionUtil sessionUtil;
+	
+	@Value("${base-url}")
+	private String baseUrl;
 
 	public TokenResponse generateTokenResponse(String clientId, String dpop) throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
@@ -58,16 +67,16 @@ public class TokenService {
 		ECKey ecJWK = new ECKeyGenerator(Curve.P_256).keyID(dpopUtil.getKid(dpop)).generate(); // TODO kid check
 		String jkt = ecJWK.computeThumbprint().toString();
 		JWSSigner signer = new ECDSASigner(ecJWK);
+		String url = "https://".concat(baseUrl).concat("/token");
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.subject("sub_pairwise")
 				.issueTime(new Date())
 				.jwtID(UUID.randomUUID().toString())
-				.audience("https://api.eudi-wallet-it-pid-provider.it/token") // TODO must match client_id
-				.claim("client_id", "https://api.eudi-wallet-it-pid-provider.it/token") // TODO https url that identifies RP
+				.audience(url) // TODO must match client_id
+				.claim("client_id", url) // TODO https url that identifies RP
 				.claim("nonce", nonce)
-				.claim("jkt", jkt)
-				.expirationTime(new Date(new Date().getTime() + 3600 * 1000)) // TODO config expiration time
+				.claim("jkt", jkt).expirationTime(new Date(new Date().getTime() + 3600 * 1000)) // TODO config expiration time
 				.build();
 
 		SignedJWT signedJWT = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.ES256).keyID(ecJWK.getKeyID()).build(),
@@ -85,11 +94,13 @@ public class TokenService {
 
 			// TODO better check uri
 			if (!htuClaim.endsWith("/token") || !htmClaim.equals("POST")) {
-				throw new IllegalArgumentException("Invalid claims: " + htmClaim + " - " + htuClaim);
+				log.error("Invaild claims: htmCaim {} - htuClaim {}", htmClaim, htuClaim);
+				throw new InvalidHtmAndHtuClaimsException("Invalid claims: htmClaim " + htmClaim + " - htuClaim " + htuClaim);
 			}
 		} catch (ParseException | JOSEException e) {
-			log.error("", e);
-			throw new RuntimeException("", e);
+			log.error("Token request Dpop parse error", e);
+			throw new TokenDpopParsingException("Token request Dpop parse error");
+
 		}
 	}
 
@@ -97,16 +108,22 @@ public class TokenService {
 		log.debug("clientId {} - code {} - codeVerifier {}", clientId, code, codeVerifier);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
 		log.debug("sessionInfo {}", sessionInfo);
-		if (sessionInfo != null && sessionInfo.getCode().equals(code)) {
-			String calculatedCodeChallenge = encodeForPkceVerify(codeVerifier);
-			if (!calculatedCodeChallenge.equals(sessionInfo.getCodeChallenge())) {
-				log.error(
-						"Error pkce validation: codeChallenge calculated {} - codeChallenge in session {} - codeVerifier {}",
-						calculatedCodeChallenge, sessionInfo.getCodeChallenge(), codeVerifier);
-				throw new IllegalArgumentException("No match between code verifier and code challenge");
-			}
-		} else
-			throw new IllegalArgumentException("No match between code and client id");
+		if (sessionInfo != null) {
+			if (sessionInfo.getCode().equals(code)) {
+				String calculatedCodeChallenge = encodeForPkceVerify(codeVerifier);
+				if (!calculatedCodeChallenge.equals(sessionInfo.getCodeChallenge())) {
+					log.error(
+							"Error pkce validation: codeChallenge calculated {} - codeChallenge in session {} - codeVerifier {}",
+							calculatedCodeChallenge, sessionInfo.getCodeChallenge(), codeVerifier);
+					throw new PkceCodeValidationException("No match between code verifier and code challenge");
+				}
+			} else
+				throw new TokenCodeValidationException("No match between code and client id");
+		} else {
+			log.error("Session info null, clientId unknown");
+			throw new SessionInfoByClientIdNotFoundException("Session info null, clientId unknown");
+
+		}
 
 	}
 
@@ -114,8 +131,7 @@ public class TokenService {
 		byte[] bytes = clearText.getBytes(StandardCharsets.US_ASCII);
 		MessageDigest instance = MessageDigest.getInstance("SHA-256");
 		instance.update(bytes, 0, bytes.length);
-		String encoded = new String(Base64.getUrlEncoder()
-				.encode(instance.digest()));
+		String encoded = new String(Base64.getUrlEncoder().encode(instance.digest()));
 		return encoded.replaceAll("=$", "");
 	}
 

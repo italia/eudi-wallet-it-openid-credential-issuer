@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -54,12 +55,14 @@ public class KeyStoreConfig implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		Path keyPath = Paths.get(keyDirectoryPath);
+		log.debug("Running KeyStore...");
 		boolean reload = false;
+		Path keyPath = Paths.get(keyDirectoryPath);
 		if (!Files.exists(keyPath)) {
 			Files.createDirectory(keyPath);
 			reload = true;
-			log.info("key directory created {}", keyDirectoryPath);
+		} else {
+			log.debug("{} path exists", keyDirectoryPath);
 		}
 
 		if (!new File(keyFilePath).exists()) {
@@ -82,7 +85,6 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
-			log.info("key file created {}", keyFilePath);
 
 
 			JSONArray jsonPublicJwk = new JSONArray().put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
@@ -96,8 +98,9 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
-			log.info("key file created {}", publicKeyFilePath);
 			reload = true;
+		} else {
+			log.debug("{} path exists", keyFilePath);
 		}
 
 		if (!new File(encrKeyFilePath).exists()) {
@@ -111,6 +114,7 @@ public class KeyStoreConfig implements CommandLineRunner {
 
 			JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
 					.privateKey((RSAPrivateKey) keyPair.getPrivate()).keyUse(KeyUse.ENCRYPTION)
+					.algorithm(JWEAlgorithm.RSA_OAEP_256)
 					.keyID(UUID.randomUUID().toString()).issueTime(new Date()).expirationTime(validityEndDate)
 					.keyIDFromThumbprint().build();
 
@@ -120,8 +124,6 @@ public class KeyStoreConfig implements CommandLineRunner {
 			} catch (Exception e) {
 				log.error("", e);
 			}
-
-			log.info("key file created {}", encrKeyFilePath);
 
 			JSONArray jsonPublicJwk = new JSONArray().put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
 
@@ -134,7 +136,8 @@ public class KeyStoreConfig implements CommandLineRunner {
 				log.error("", e);
 			}
 			reload = true;
-			log.info("key file created {}", publicEncrKeyFilePath);
+		} else {
+			log.debug("{} path exists", encrKeyFilePath);
 		}
 
 		if (reload) {
@@ -174,5 +177,4 @@ public class KeyStoreConfig implements CommandLineRunner {
 
 		throw new RuntimeException("cannot load key from file");
 	}
-
 }

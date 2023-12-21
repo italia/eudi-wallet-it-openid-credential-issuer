@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.authlete.sd.Disclosure;
@@ -26,13 +27,17 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.ipzs.pidprovider.dto.VerifiedClaims;
 import it.ipzs.pidprovider.oidclib.OidcWrapper;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SdJwtUtil {
 
 	private final OidcWrapper oidcWrapper;
+	
+	@Value("${base-url}")
+	private String baseUrl;
+
 
 	public Disclosure generateGenericDisclosure(String salt, String claimName, Object claimValueObject) {
 		return new Disclosure(salt, claimName, claimValueObject);
@@ -48,7 +53,7 @@ public class SdJwtUtil {
 		JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.ES256).type(new JOSEObjectType("kb+jwt")).build();
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder().issueTime(new Date())
-				.audience(List.of("https://api.eudi-wallet-it-pid-provider.it")).claim("nonce", nonce).build();
+				.audience(List.of("https://" + baseUrl)).claim("nonce", nonce).build();
 
 
 		SignedJWT jwt = new SignedJWT(header, claimsSet);
@@ -83,13 +88,13 @@ public class SdJwtUtil {
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.issueTime(new Date())
-				.issuer("https://api.eudi-wallet-it-pid-provider.it")
+				.issuer("https://" + baseUrl)
 				.subject(dpopJwk.computeThumbprint().toString())
 				.jwtID("urn:uuid:".concat(UUID.randomUUID().toString()))
 				.expirationTime(validityEndDate)
 				.claim("verified_claims", vc)
 				.claim("_sd_alg", "sha-256")
-				.claim("status", "https://api.eudi-wallet-it-pid-provider.it/status") // TODO implementation
+				.claim("status", "https://" + baseUrl + "/status") // TODO implementation
 				.claim("type", "PersonIdentificationData")
 				.claim("cnf", cnfObj.toMap())
 				.build();

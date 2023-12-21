@@ -2,7 +2,6 @@ package it.ipzs.pidprovider.oidclib;
 
 import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import com.nimbusds.jose.jwk.JWK;
@@ -163,14 +162,18 @@ public class OidcWrapper {
 					oidcConfig.getFederationTrustChainUrl()),
 					String.class);
 			String fedTc = entity.getBody();
+			logger.info("> HTTP status code {}", entity.getStatusCode());
 
 			WellKnownData wellKnown = getWellKnownData(false);
 
 			return List.of(wellKnown.getValue(), fedTc);
 
-		} catch (RestClientException | URISyntaxException | OIDCException e) {
-			logger.error("Error in trust chain retrieval", e);
-
+		} catch (Exception e) {
+			if (e instanceof HttpStatusCodeException rce) {
+				logger.error("-> HTTP status code {}", rce.getStatusCode());
+			} else {
+				logger.error("", e);
+			}
 			throw new RuntimeException(e);
 		}
 
@@ -221,6 +224,12 @@ public class OidcWrapper {
 		fedEntOptions.setOrganization_name(oidcConfig.getFederationEntity().getOrganizationName());
 
 		oidcHandler = new OidcHandler(options, persistenceImpl, credentialOptions, fedEntOptions);
+
+		try {
+			generateTrustChain();
+		} catch (Exception e) {
+			logger.error("error in trust chain retrieval");
+		}
 	}
 
 	private List<CredentialType> generateCredentialSupportedList() {

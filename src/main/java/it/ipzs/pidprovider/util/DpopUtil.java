@@ -19,34 +19,38 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.ipzs.pidprovider.exception.DpopJwtMissingClaimException;
+import it.ipzs.pidprovider.exception.JwkKeyTypeException;
+import it.ipzs.pidprovider.exception.JwsHeaderMissingFieldException;
+
 @Component
 public class DpopUtil {
 
-	private static final String TYPE_HEADER = "dpop+jwt";
-	private static final String JTI_CLAIM = "jti";
-	private static final String HTM_CLAIM = "htm";
-	private static final String HTU_CLAIM = "htu";
-	private static final String IAT_CLAIM = "iat";
+    private static final String TYPE_HEADER = "dpop+jwt";
+    private static final String JTI_CLAIM = "jti";
+    private static final String HTM_CLAIM = "htm";
+    private static final String HTU_CLAIM = "htu";
+    private static final String IAT_CLAIM = "iat";
 
-
+    
 	public JWTClaimsSet parse(String dpop) throws ParseException, JOSEException {
 		SignedJWT jwt = SignedJWT.parse(dpop);
 
 		JWSHeader jwsHeader = jwt.getHeader();
 		validateHeader(jwsHeader);
 		JWK jwk = jwsHeader.getJWK();
-
+		
 		JWSVerifier verifier;
-		if (jwk instanceof ECKey) {
-			ECKey ecKey = (ECKey) jwk;
-			verifier = new ECDSAVerifier(ecKey);
-		} else if (jwk instanceof RSAKey) {
-			RSAKey rsaKey = (RSAKey) jwk;
-			verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
-		} else {
-			throw new IllegalArgumentException("JWK key type not matched: " + jwk.getKeyType().getValue());
-		}
-
+		 if (jwk instanceof ECKey) {
+				ECKey ecKey = (ECKey) jwk;
+	            verifier = new ECDSAVerifier(ecKey);
+			} else if (jwk instanceof RSAKey) {
+				RSAKey rsaKey = (RSAKey) jwk;
+	            verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
+			} else {
+				throw new JwkKeyTypeException("JWK key type not matched: " + jwk.getKeyType().getValue());
+	        }
+		
 		jwt.verify(verifier);
 		validateClaims(jwt.getJWTClaimsSet());
 
@@ -61,21 +65,21 @@ public class DpopUtil {
 		Object jti = claims.getClaim(JTI_CLAIM);
 
 		if (Stream.of(htm, htu, iat, jti).anyMatch(Objects::isNull)) {
-			throw new IllegalArgumentException("Invalid DPoP - missing claim");
+			throw new DpopJwtMissingClaimException("Invalid DPoP - missing claim");
 		}
 	}
 
 	private void validateHeader(JWSHeader jwsHeader) {
 		if (jwsHeader.getType() == null || !TYPE_HEADER.equals(jwsHeader.getType().getType())) {
-			throw new IllegalArgumentException("Type header not matched: " + jwsHeader.getType());
+			throw new JwsHeaderMissingFieldException("Type header not matched: " + jwsHeader.getType());
 		}
 
 		if (jwsHeader.getAlgorithm() == null) {
-			throw new IllegalArgumentException("Algorithm header is missing");
+			throw new JwsHeaderMissingFieldException("Algorithm header is missing");
 		}
 
 		if (jwsHeader.getJWK() == null) {
-			throw new IllegalArgumentException("JWK header is missing");
+			throw new JwsHeaderMissingFieldException("JWK header is missing");
 		}
 	}
 

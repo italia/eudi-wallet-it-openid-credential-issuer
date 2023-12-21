@@ -341,11 +341,16 @@ public class OidcHandler {
 
 		String sub = getSubjectFromWellKnownURL(requestURL);
 
-		if (!Objects.equals(sub, options.getClientId())) {
-			throw new OIDCException(
-				String.format(
-					"Sub doesn't match %s : %s", sub, options.getClientId()));
+		if (sub.contains("svc.cluster.local")) {
+			logger.debug("wellknown request coming from within the cluster");
+		} else {
+			if (!Objects.equals(sub, options.getClientId())) {
+				throw new OIDCException(
+					String.format(
+						"Sub doesn't match %s : %s", sub, options.getClientId()));
+			}
 		}
+		
 
 		FederationEntity conf = persistence.fetchFederationEntity(sub, true);
 
@@ -882,12 +887,12 @@ public class OidcHandler {
 
 		RSAKey jwk = JWTHelper.parseRSAKey(confJwk);
 
-		logger.info("Configured jwk\n" + jwk.toJSONString());
+		logger.debug("Configured jwk\n" + jwk.toJSONString());
 
 		JSONArray jsonPublicJwk = new JSONArray()
 			.put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
 
-		logger.info("Configured public jwk\n" + jsonPublicJwk.toString(2));
+		logger.debug("Configured public jwk\n" + jsonPublicJwk.toString(2));
 
 		JWKSet jwkSet = new JWKSet(jwk);
 
@@ -918,11 +923,11 @@ public class OidcHandler {
 		} else {
 			RSAKey credJwk = JWTHelper.parseRSAKey(credJwkString);
 
-			logger.info("Configured credential jwk\n" + credJwk.toJSONString());
+			logger.debug("Configured credential jwk\n" + credJwk.toJSONString());
 
 			JSONArray credJsonPublicJwk = new JSONArray().put(new JSONObject(credJwk.toPublicJWK().toJSONObject()));
 
-			logger.info("Configured public jwk\n" + credJsonPublicJwk.toString(2));
+			logger.debug("Configured public jwk\n" + credJsonPublicJwk.toString(2));
 
 			credJwkSet = new JWKSet(credJwk);
 			RSAKey credEncrJwk = JWTHelper.parseRSAKey(credEncrJwkString);

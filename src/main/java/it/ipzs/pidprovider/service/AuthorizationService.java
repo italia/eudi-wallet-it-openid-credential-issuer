@@ -6,6 +6,10 @@ import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
 
+import it.ipzs.pidprovider.exception.AuthorizationRequestValidationException;
+import it.ipzs.pidprovider.exception.CallbackRequestValidationException;
+import it.ipzs.pidprovider.exception.SessionInfoByClientIdNotFoundException;
+import it.ipzs.pidprovider.exception.SessionInfoByStateNotFoundException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.CallbackJwtUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
@@ -21,7 +25,6 @@ public class AuthorizationService {
 	private final SessionUtil sessionUtil;
 	private final CallbackJwtUtil dpJwtUtil;
 
-
 	public String generateCode() {
 		return srService.generateRandomByByteLength(32);
 	}
@@ -30,22 +33,38 @@ public class AuthorizationService {
 		log.debug("clientId {} - requestUri {}", clientId, requestUri);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
 		log.debug("sessionInfo {}", sessionInfo);
-		if (sessionInfo != null && sessionInfo.getRequestUri().equals(requestUri) && !sessionInfo.isVerified())
-			return sessionInfo;
-		else
-			throw new IllegalArgumentException("Client ID or request uri unknown");
+		if (sessionInfo != null) {
+			if (sessionInfo.getRequestUri().equals(requestUri) && !sessionInfo.isVerified()) {
+				return sessionInfo;
+			} else {
+				log.error(
+						"Authorization request parameter validation exception: reqeustUri {} - sessioInfo isVerified {}",
+						requestUri, sessionInfo.isVerified());
+				throw new AuthorizationRequestValidationException(
+						"Authorization request parameter validation exception");
+			}
+		} else {
+			log.error("Client id unknown");
+			throw new SessionInfoByClientIdNotFoundException("Client ID or request uri unknown");
+		}
 	}
 
 	public SessionInfo checkStateParamAndReturnSessionInfo(String state) {
 		SessionInfo sessionInfo = sessionUtil.getSessionInfoByState(state);
-		if (sessionInfo != null && !sessionInfo.isVerified()) {
-			sessionInfo.setCode(generateCode());
-			sessionInfo.setVerified(true);
-			sessionUtil.putSessionInfo(sessionInfo);
-		}
-		else {
-			log.debug("sessionInfo {} - state {}", sessionInfo, state);
-			throw new IllegalArgumentException("State param unknown");
+		if (sessionInfo != null) {
+			if (!sessionInfo.isVerified()) {
+				sessionInfo.setCode(generateCode());
+				sessionInfo.setVerified(true);
+				sessionUtil.putSessionInfo(sessionInfo);
+
+			} else {
+				log.error("Callback request parameter validation exception: sessionInfo isVerified {}", sessionInfo.isVerified());
+				throw new CallbackRequestValidationException("Callback request parameter validation exception");
+			}
+		} else {
+			log.error("sessionInfo {} - state {}", sessionInfo, state);
+			throw new SessionInfoByStateNotFoundException("State param unknown");
+
 		}
 
 		return sessionInfo;
@@ -56,5 +75,4 @@ public class AuthorizationService {
 			throws JOSEException, ParseException {
 		return dpJwtUtil.generateCallbackJwtResponse(si, state, issuer);
 	}
-
 }

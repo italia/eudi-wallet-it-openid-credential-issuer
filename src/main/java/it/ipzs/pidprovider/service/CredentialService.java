@@ -21,6 +21,11 @@ import it.ipzs.pidprovider.dto.ProofRequest;
 import it.ipzs.pidprovider.dto.RecordDto;
 import it.ipzs.pidprovider.dto.SourceDto;
 import it.ipzs.pidprovider.dto.VerifiedClaims;
+import it.ipzs.pidprovider.exception.CredentialDpopParsingException;
+import it.ipzs.pidprovider.exception.CredentialJwtMissingClaimException;
+import it.ipzs.pidprovider.exception.CredentialNonceNotMatchException;
+import it.ipzs.pidprovider.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.pidprovider.exception.SessionInfoByClientIdNotFoundException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.AccessTokenUtil;
 import it.ipzs.pidprovider.util.CredentialProofUtil;
@@ -42,13 +47,11 @@ public class CredentialService {
 	private final SdJwtUtil sdJwtUtil;
 	private final SessionUtil sessionUtil;
 
-
-
 	public CredentialResponse generateSdCredentialResponse(String dpop, ProofRequest proof)
 			throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
-		return CredentialResponse.builder().format("vc+sd-jwt")
-				.nonce(nonce).nonceExpiresIn(86400).credential(generateSdJwtCredential(dpop, proof, nonce)).build();
+		return CredentialResponse.builder().format("vc+sd-jwt").nonce(nonce).nonceExpiresIn(86400)
+				.credential(generateSdJwtCredential(dpop, proof, nonce)).build();
 
 	}
 
@@ -69,7 +72,6 @@ public class CredentialService {
 		Disclosure placeOfBirthClaim = sdJwtUtil.generateGenericDisclosure("place_of_birth",
 				PlaceOfBirthDto.builder().country("IT").locality("Rome").build());
 		Disclosure taxClaim = sdJwtUtil.generateGenericDisclosure("tax_id_number", "TINIT-RSSMRA80A10H501A");
-
 
 		VerifiedClaims vc = new VerifiedClaims();
 
@@ -95,7 +97,6 @@ public class CredentialService {
 		builder.putSDClaim(taxClaim);
 		builder.putSDClaim(uniqueIdClaim);
 
-
 		SDObjectBuilder evBuilder = new SDObjectBuilder();
 		evBuilder.putClaim("assurance_level", "high");
 		evBuilder.putClaim("trust_framework", "eidas");
@@ -105,10 +106,8 @@ public class CredentialService {
 		vc.setClaims(builder.build());
 		vc.setVerification(evBuilder.build());
 
-		SDJWT sdjwt = new SDJWT(
-				sdJwtUtil.generateCredential(vc, jwk),
-				List.of(evDisclosure, nameClaim, familyClaim, uniqueIdClaim, birthdateClaim, placeOfBirthClaim,
-						taxClaim));
+		SDJWT sdjwt = new SDJWT(sdJwtUtil.generateCredential(vc, jwk), List.of(evDisclosure, nameClaim, familyClaim,
+				uniqueIdClaim, birthdateClaim, placeOfBirthClaim, taxClaim));
 
 		String sdJwtString = sdjwt.toString();
 		// remove last tilde for SD-JWT draft 4 compliance
@@ -123,11 +122,12 @@ public class CredentialService {
 
 			// TODO better check uri
 			if (!htuClaim.endsWith("/credential") || !htmClaim.equals("POST")) {
-				throw new IllegalArgumentException("Invalid claims: " + htmClaim + " - " + htuClaim);
+				log.error("Invaild claims: htmCaim {} - htuClaim {}", htmClaim, htuClaim);
+				throw new InvalidHtmAndHtuClaimsException("Invalid claims: " + htmClaim + " - " + htuClaim);
 			}
 		} catch (ParseException | JOSEException e) {
-			log.error("", e);
-			throw new RuntimeException("", e);
+			log.error("Credential request Dpop parse error", e);
+			throw new CredentialDpopParsingException("Credential request Dpop parse error");
 		}
 	}
 
@@ -136,30 +136,31 @@ public class CredentialService {
 
 		JWTClaimsSet tokenClaims = accessTokenUtil.parse(authorization);
 		JWTClaimsSet proofClaims = proofUtil.parse(proof.getJwt());
-		
+
 		Object proofNonce = proofClaims.getClaim("nonce");
 		Object proofClientId = proofClaims.getClaim("iss");
 		Object tokenNonce = tokenClaims.getClaim("nonce");
-		if(Stream.of(proofNonce, proofClientId, tokenNonce).anyMatch(Objects::isNull)) {
+		if (Stream.of(proofNonce, proofClientId, tokenNonce).anyMatch(Objects::isNull)) {
 			log.error("proof Nonce {} - token nonce {} - proof clientId {} ", proofNonce, tokenNonce, proofClientId);
-			throw new IllegalArgumentException("proof or authorization parameter missing required key");
+			throw new CredentialJwtMissingClaimException("proof or authorization parameter missing required key");
 		} else {
-			boolean checkPassed = false;
 			SessionInfo sessionInfo = sessionUtil.getSessionInfo((String) proofClientId);
 			if (sessionInfo != null) {
 				log.debug("session info {}", sessionInfo);
 				String nonce = sessionInfo.getNonce();
 				if (nonce.equals(tokenNonce) && nonce.equals(proofNonce)) {
-					checkPassed = true;
+					log.info("credential authorization and credential proof validated");
 				} else {
-					log.debug("token nonce {} - proof nonce {} - nonce in session {}", tokenNonce, proofNonce, nonce);
+					log.error("token nonce {} - proof nonce {} - nonce in session {}", tokenNonce, proofNonce, nonce);
+					throw new CredentialNonceNotMatchException("Nonce does not match");
 				}
+			} else {
+				log.error("session info is null, clientId unknown");
+				throw new SessionInfoByClientIdNotFoundException("session info is null, clientId in credential proof unknown");
+
 			}
 
-			if (!checkPassed)
-				throw new IllegalArgumentException("Nonce does not match");
 		}
 
 	}
-
 }

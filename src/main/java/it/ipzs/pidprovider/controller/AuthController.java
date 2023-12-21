@@ -68,11 +68,13 @@ public class AuthController {
 		log.trace("-> code_challenge {}", code_challenge);
 		log.trace("-> client_assertion {}", client_assertion);
 		log.trace("-> request {}", request);
+		log.info("Par request received: client_id {}", client_id);
 
 		// TODO check validity client assertion
 		Object cnf = parService.validateClientAssertionAndRetrieveCnf(client_assertion);
 		ParResponse response = parService.generateRequestUri(request, cnf);
 		log.trace("par response: {}", response);
+		log.info("Pushed Authorization Request accepted: {}", response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
@@ -80,11 +82,13 @@ public class AuthController {
 	public ResponseEntity<?> authorize(@RequestParam("client_id") String client_id,
 			@RequestParam("request_uri") String request_uri) {
 
+		log.info("Authorize request received: clientId {} - requestUri {}", client_id, request_uri);
 		log.trace("/authorize params: client_id {} - request_uri {}", client_id, request_uri);
 		// TODO eIDAS LoA High
 		SessionInfo si = authService.retrieveStateParam(client_id, request_uri);
 		String uri = redirectUrl.concat("?state=").concat(si.getState());
 		log.trace("authorize response: {}", uri);
+		log.info("Authorize request accepted");
 		return ResponseEntity.status(HttpStatus.FOUND)
 				.location(URI.create(uri)).build();
 	}
@@ -95,8 +99,8 @@ public class AuthController {
 
 		// TODO manage params from eIDAS LoA High callback and redirect to app universal
 		// url
-
 		String state = params.get("state");
+		log.info("Callback request received: state {}", state);
 		SessionInfo si = null;
 		String responseDirectPost = "";
 		try {
@@ -110,10 +114,11 @@ public class AuthController {
 		try {
 			responseDirectPost = authService.generateDirectPostAuthorizeResponse(si, state, issuer);
 		} catch (JOSEException | ParseException e) {
-			log.error("", e);
+			log.error("Error in generating authorize response jwt", e);
 			return ResponseEntity.internalServerError().build();
 		}
 		log.trace("callback response: {}", uri);
+		log.info("callback request accepted");
 		return ResponseEntity.status(HttpStatus.OK).body("response=".concat(responseDirectPost));
 	}
 
@@ -133,13 +138,10 @@ public class AuthController {
 		log.trace("-> code_verifier {}", code_verifier);
 		log.trace("-> code {}", code);
 		log.trace("-> DPoP header {}", dpop);
+		
+		log.info("Token request: client_id {}", client_id);
 
-		try {
 			tokenService.checkDpop(dpop);
-		} catch (Exception e) {
-			// TODO remove try-catch after integration
-			log.error("", e);
-		}
 		try {
 			tokenService.checkParams(client_id, code, code_verifier);
 		} catch (Exception e) {
@@ -148,6 +150,7 @@ public class AuthController {
 		}
 		TokenResponse response = tokenService.generateTokenResponse(client_id, dpop);
 		log.trace("token response: {}", response);
+		log.info("--> /token - success");
 		return ResponseEntity.ok(response);
 	}
 
@@ -162,6 +165,8 @@ public class AuthController {
 		log.trace("-> proof {}", proof);
 		log.trace("-> DPoP header {}", dpop);
 		log.trace("-> Authorization header {}", authorization);
+		
+		log.info("Credential request received: credential_definition {} - format {}", credential_definition, format);
 
 		ProofRequest proofReq = null;
 		try {
@@ -186,12 +191,13 @@ public class AuthController {
 		try {
 			response = credentialService.generateSdCredentialResponse(dpop, proofReq);
 			log.trace("credential response: {}", response);
+			log.info("--> /credential - success");
 			return ResponseEntity.ok(response);
 		} catch (JOSEException e) {
-			log.error("", e);
+			log.error("Error in credential generation", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		} catch (ParseException e) {
-			log.error("", e);
+			log.error("Error in credential generation", e);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		

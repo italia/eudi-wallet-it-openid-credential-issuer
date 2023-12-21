@@ -27,6 +27,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.pidprovider.dto.CredentialResponse;
 import it.ipzs.pidprovider.dto.ProofRequest;
+import it.ipzs.pidprovider.exception.CredentialDpopParsingException;
+import it.ipzs.pidprovider.exception.CredentialJwtMissingClaimException;
+import it.ipzs.pidprovider.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.pidprovider.exception.SessionInfoByClientIdNotFoundException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.oidclib.exception.OIDCException;
 import it.ipzs.pidprovider.service.CredentialService;
@@ -116,7 +120,7 @@ class CredentialServiceTest {
 		when(dpopUtil.getHtmClaim(jwtClaimsSet)).thenReturn("GET");
 
 		// Test
-		assertThrows(RuntimeException.class, () -> credentialService.checkDpop("DPoP"));
+		assertThrows(InvalidHtmAndHtuClaimsException.class, () -> credentialService.checkDpop("DPoP"));
 
 		// Verify
 		verify(dpopUtil, times(1)).parse("DPoP");
@@ -130,7 +134,7 @@ class CredentialServiceTest {
 		when(dpopUtil.parse(anyString())).thenThrow(new ParseException("Parse Error", 0));
 
 		// Test and Verify
-		assertThrows(RuntimeException.class, () -> credentialService.checkDpop("DPoP"));
+		assertThrows(CredentialDpopParsingException.class, () -> credentialService.checkDpop("DPoP"));
 	}
 
 	@Test
@@ -183,7 +187,7 @@ class CredentialServiceTest {
 		when(proofUtil.parse("jwt")).thenReturn(proofClaims);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(CredentialJwtMissingClaimException.class,
 				() -> credentialService.checkAuthorizationAndProof("authorization", proof));
 	}
 
@@ -209,7 +213,7 @@ class CredentialServiceTest {
 		when(sessionInfo.getNonce()).thenReturn("nonce");
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(SessionInfoByClientIdNotFoundException.class,
 				() -> credentialService.checkAuthorizationAndProof("authorization", proof));
 	}
 }

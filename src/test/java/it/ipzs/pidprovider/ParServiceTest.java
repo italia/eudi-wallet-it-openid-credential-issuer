@@ -23,6 +23,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.pidprovider.dto.Cnf;
 import it.ipzs.pidprovider.dto.ParResponse;
+import it.ipzs.pidprovider.exception.ParRequestJwtMissingParameterException;
+import it.ipzs.pidprovider.exception.ParRequestJwtValidationException;
 import it.ipzs.pidprovider.service.ParService;
 import it.ipzs.pidprovider.util.ParRequestJwtUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
@@ -93,7 +95,7 @@ class ParServiceTest {
 		Cnf cnf = mock(Cnf.class);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(ParRequestJwtMissingParameterException.class,
 				() -> parService.generateRequestUri("missingParameterRequest", cnf));
 		
 	}
@@ -104,7 +106,7 @@ class ParServiceTest {
 		when(parRequestJwtUtil.parse(anyString())).thenThrow(new ParseException("Parse Error", 0));
 		Cnf cnf = mock(Cnf.class);
 		// Test and Verify
-		assertThrows(RuntimeException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf));
+		assertThrows(ParRequestJwtValidationException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf));
 	}
 }
 

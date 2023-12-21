@@ -11,6 +11,9 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.pidprovider.dto.ParResponse;
+import it.ipzs.pidprovider.exception.ClientAssertionValidationException;
+import it.ipzs.pidprovider.exception.ParRequestJwtValidationException;
+import it.ipzs.pidprovider.exception.ParRequestJwtMissingParameterException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.ParRequestJwtUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
@@ -35,10 +38,12 @@ public class ParService {
 		// TODO validate wallet instance
 		try {
 			JWTClaimsSet parse = walletInstanceUtil.parse(clientAssertion);
+			log.info("- client assertion validated");
 			return parse.getClaim("cnf");
 		} catch (ParseException | JOSEException e) {
-			log.error("", e);
-			throw new RuntimeException(e);
+			log.error("! client assertion not validated", e);
+			throw new ClientAssertionValidationException(e);
+
 		}
 
 	}
@@ -68,7 +73,7 @@ public class ParService {
 			if (Stream.of(redirectUri, codeChallenge, state, clientId).anyMatch(Objects::isNull)) {
 				log.debug("redirectUri {} - codeChallenge {} - state {} - clientId {}", redirectUri, codeChallenge,
 						state, clientId);
-				throw new IllegalArgumentException("JWT request missing required parameter.");
+				throw new ParRequestJwtMissingParameterException("JWT request missing required parameter.");
 			}
 			ParResponse response = new ParResponse();
 
@@ -79,8 +84,9 @@ public class ParService {
 
 			return response;
 		} catch (ParseException | JOSEException e) {
-			log.error("", e);
-			throw new RuntimeException(e);
+			log.error("! PAR jwt request not validated", e);
+			throw new ParRequestJwtValidationException(e);
+
 		}
 
 	}

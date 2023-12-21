@@ -13,13 +13,14 @@ springdoc:
   - it.ipzs.pidprovider.controller
   paths-to-exclude:
   - /cie/**
-auth-controller:
-  redirect-url: https://api.eudi-wallet-it-pid-provider.it/callback
-  issuer-url: https://api.eudi-wallet-it-pid-provider.it
+base-url: api.eudi-wallet-it-pid-provider.it
+auth-controller: 
+  redirect-url: https://${base-url}/callback
+  issuer-url: https://${base-url}
 consent-controller:
-  consent-url: https://api.eudi-wallet-it-pid-provider.it/cie/consent
-  accepted-url: https://api.eudi-wallet-it-pid-provider.it/cie/accepted
-  callback-url: https://api.eudi-wallet-it-pid-provider.it/callback
+  consent-url: https://${base-url}/cie/consent
+  accepted-url: https://${base-url}/cie/accepted
+  callback-url: https://${base-url}/callback
 logging:
   level:
     '[it.ipzs.pidprovider.controller.AuthController]': WARN
@@ -33,13 +34,13 @@ oidc:
    hosts:
       trust-anchor: 127.0.0.1
       cie-provider: 127.0.0.1
-      relying-party: 127.0.0.1
+      relying-party: ${base-url}
 
       
    # required for onboarding checks and also for all the leafs
    default-trust-anchor: "http://${oidc.hosts.trust-anchor}:8000/"
    
-   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://api.eudi-wallet-it-pid-provider.it/ci"
+   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://${base-url}/ci"
 
    # List of trust anchors
    trust-anchors:
@@ -64,14 +65,14 @@ oidc:
       - offline_access
       token-endpoint-auth-method: 
       - private_key_jwt
-      client-id: "http://${oidc.hosts.relying-party}:8080/ci"
+      client-id: "http://${oidc.hosts.relying-party}/ci"
       redirect-uris:
-      - "http://${oidc.hosts.relying-party}:8080/callback"
+      - "http://${oidc.hosts.relying-party}/callback"
       jwk-file-path: ${user.home}/oidc-rp-jwk.json
       trust-marks-file-path: ${user.home}/oidc-rp-trust-marks.json
 
    openid-credential-issuer:
-      credential-issuer: 127.0.0.1:8080
+      credential-issuer: ${base-url}
       dpop-signing-alg-values-supported:
       - RS256
       authorization-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/authorize"
@@ -80,13 +81,13 @@ oidc:
       credential-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/credential"
       jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
       encr-jwk-file-path: ${user.home}/key/eudi-encr-key-jwk.json
-      sub: "http://${oidc.hosts.relying-party}:8080/ci"
+      sub: "http://${oidc.hosts.relying-party}/ci"
 
    federation-entity:
-     homepage-uri: "http://${oidc.hosts.relying-party}:8080/ci"
+     homepage-uri: "http://${oidc.hosts.relying-party}/ci"
      organization-name: "EUDI IT Wallet Pid Provider"
-     policy-uri: "http://${oidc.hosts.relying-party}:8080/ci"
-     tos-uri: "http://${oidc.hosts.relying-party}:8080/ci"
-     logo-uri:  "http://${oidc.hosts.relying-party}:8080/public/logo.svg"
+     policy-uri: "http://${oidc.hosts.relying-party}/ci"
+     tos-uri: "http://${oidc.hosts.relying-party}/ci"
+     logo-uri:  "http://${oidc.hosts.relying-party}/public/logo.svg"
 metadata:
   path: ${user.home}/metadata.json

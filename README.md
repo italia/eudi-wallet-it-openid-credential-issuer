@@ -108,7 +108,9 @@ In this release there is a mock authentication: the credentials are `user`/`pass
 
 # Updates
 
-v.1.3.3. - fix Docker config
+v.1.4.0 - log and exceptions
+
+v.1.3.3 - fix Docker config
 
 v.1.3.2 - fix CVE, actuator config
 
