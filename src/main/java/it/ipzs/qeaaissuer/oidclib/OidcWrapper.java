@@ -163,6 +163,19 @@ public class OidcWrapper {
 		return parsedJWK;
 	}
 
+	public JWK getMdocCredentialIssuerJWK() throws ParseException {
+		String credJwk = oidcHandler.getCredentialOptions().getMdocJwk();
+		JWK parsedJWK = null;
+		try {
+			parsedJWK = JWK.parse(credJwk);
+		} catch (ParseException e) {
+			logger.error("", e);
+			throw e;
+		}
+
+		return parsedJWK;
+	}
+
 	public String getCredentialIssuerTrustMarks() {
 		return oidcHandler.getCredentialOptions().getTrustMarks();
 	}
@@ -247,6 +260,7 @@ public class OidcWrapper {
 				.setTrustMarks(trustMarks);
 
 		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
+		String mdocCredJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getMdocJwkFilePath());
 
 		OIDCCredentialIssuerOptions credentialOptions = OIDCCredentialIssuerOptions.builder()
 				.pushedAuthorizationRequestEndpoint(
@@ -257,6 +271,7 @@ public class OidcWrapper {
 				.authorizationEndpoint(oidcConfig.getOpenidCredentialIssuer().getAuthorizationEndpoint())
 				.credentialsSupported(generateCredentialSupportedList())
 				.jwk(credJwk)
+				.mdocJwk(mdocCredJwk)
 				.sub(oidcConfig.getOpenidCredentialIssuer().getSub())
 				.trustChain(oidcConfig.getOpenidCredentialIssuer().getTrustChain())
 				.build();
@@ -429,6 +444,11 @@ public class OidcWrapper {
 						DisplayConf.builder().name("Date of Birth").locale("en-US").build()))
 				.build());
 
+		credSubj.setFiscal_code(CredentialField.builder().mandatory(true)
+				.display(List.of(DisplayConf.builder().name("Codice Fiscale").locale("it-IT").build(),
+						DisplayConf.builder().name("Fiscal Code").locale("en-US").build()))
+				.build());
+
 		credSubj.setExpiration_date(CredentialField.builder().mandatory(true)
 				.display(List.of(DisplayConf.builder().name("Data di Scadenza").locale("it-IT").build(),
 						DisplayConf.builder().name("Expiration Date").locale("en-US").build()))
@@ -507,7 +527,7 @@ public class OidcWrapper {
 
 		credSubj.setIssue_date(CredentialField.builder().mandatory(true)
 				.display(List.of(DisplayConf.builder().name("Data di rilascio").locale("it-IT").build(),
-						DisplayConf.builder().name("Issuing Date").locale("en-US").build()))
+						DisplayConf.builder().name("Issue Date").locale("en-US").build()))
 				.build());
 
 		credSubj.setExpiry_date(CredentialField.builder().mandatory(true)
@@ -515,7 +535,7 @@ public class OidcWrapper {
 						DisplayConf.builder().name("Expiry Date").locale("en-US").build()))
 				.build());
 
-		credSubj.setUn_distinguishing_sing(CredentialField.builder().mandatory(true)
+		credSubj.setUn_distinguishing_sign(CredentialField.builder().mandatory(true)
 				.display(List.of(DisplayConf.builder().name("Segno distintivo UN").locale("it-IT").build(),
 						DisplayConf.builder().name("UN Distinguishing Sign").locale("en-US").build()))
 				.build());
@@ -556,9 +576,11 @@ public class OidcWrapper {
 		String jwk = readFile(oidcConfig.getRelyingParty().getJwkFilePath());
 		String encrJwk = readFile(oidcConfig.getRelyingParty().getEncrJwkFilePath());
 		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
+		String mdocCredJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getMdocJwkFilePath());
 		this.oidcHandler.getCredentialOptions().setJwk(credJwk);
 		this.oidcHandler.getRelyingPartyOptions().setJWK(jwk);
 		this.oidcHandler.getRelyingPartyOptions().setEncrJWK(encrJwk);
+		this.oidcHandler.getCredentialOptions().setMdocJwk(mdocCredJwk);
 		logger.debug("key reloaded!");
 	}
 

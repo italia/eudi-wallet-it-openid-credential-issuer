@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import it.ipzs.qeaaissuer.exception.SessionInfoByClientIdNotFoundException;
+import it.ipzs.qeaaissuer.exception.SessionInfoByStateNotFoundException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.service.AuthorizationService;
 import it.ipzs.qeaaissuer.service.SRService;
@@ -71,7 +73,7 @@ class AuthorizationServiceTest {
 		when(sessionUtil.getSessionInfo("clientId")).thenReturn(null);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(SessionInfoByClientIdNotFoundException.class,
 				() -> authorizationService.retrieveStateParam("clientId", "requestUri"));
 
 		verify(sessionUtil, times(1)).getSessionInfo("clientId");
@@ -102,7 +104,7 @@ class AuthorizationServiceTest {
 		when(sessionUtil.getSessionInfoByState("state")).thenReturn(null);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(SessionInfoByStateNotFoundException.class,
 				() -> authorizationService.checkStateParamAndReturnSessionInfo("state"));
 
 		verify(sessionUtil, times(0)).putSessionInfo(any(SessionInfo.class));

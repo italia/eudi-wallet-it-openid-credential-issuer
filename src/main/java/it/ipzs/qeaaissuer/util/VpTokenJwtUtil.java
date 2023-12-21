@@ -14,6 +14,8 @@ import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.ipzs.qeaaissuer.exception.VpTokenKidValidationException;
+import it.ipzs.qeaaissuer.exception.VpTokenVerifyException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +39,7 @@ public class VpTokenJwtUtil {
 		if (jwkJsonObj != null && jwkJsonObj.getString("kid") != null && jwsHeader.getKeyID() != null
 				&& !jwsHeader.getKeyID().equals(jwkJsonObj.getString("kid"))) {
 				log.error("VpToken JWT not verified - JWK Key ID different from CNF in Pid Credentials");
-				throw new RuntimeException("VpToken JWT not verified");
+				throw new VpTokenKidValidationException("VpToken JWT not verified");
 		}
 		if (jwkJsonObj != null) {
 			ECKey ecKey = ECKey.parse(jwkJsonObj.toMap());
@@ -46,7 +48,7 @@ public class VpTokenJwtUtil {
 
 			if (Boolean.FALSE.equals(jwt.verify(verifier))) {
 				log.error("VpToken JWT not verified with kid-generated key");
-				throw new RuntimeException("VpToken JWT not verified");
+				throw new VpTokenVerifyException("VpToken JWT not verified");
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.nimbusds.jose.JOSEException;
@@ -20,14 +21,16 @@ import com.nimbusds.jwt.SignedJWT;
 
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.oidclib.OidcWrapper;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ResponseObjectUtil {
 
 	private final OidcWrapper oidcWrapper;
 
+	@Value("${vp-token.aud-uri:https://api.eudi-wallet-it-issuer.it/callback}")
+	private String callbackUri;
 
 	public String generateResponseObject(SessionInfo sessionInfo)
 			throws JOSEException, ParseException {
@@ -52,10 +55,10 @@ public class ResponseObjectUtil {
 				.expirationTime(validityEndDate)
 				.claim("scope", "eu.europa.ec.eudiw.pid.it.1 pid-sd-jwt:unique_id+given_name+family_name")
 				.claim("client_id_scheme", "entity_id")
-				.claim("client_id", "https://api.eudi-wallet-it-issuer.it")
+				.claim("client_id", callbackUri.replace("/callback", ""))
 				.claim("response_mode", "direct_post.jwt")
 				.claim("response_type", "vp_token")
-				.claim("response_uri", "https://api.eudi-wallet-it-issuer.it/callback")
+				.claim("response_uri", callbackUri)
 				.claim("state", sessionInfo.getState())
 				.claim("nonce", sessionInfo.getRequestUriNonce())
 				.build();

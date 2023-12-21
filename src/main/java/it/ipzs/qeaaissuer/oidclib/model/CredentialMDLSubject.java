@@ -18,7 +18,7 @@ public class CredentialMDLSubject implements CredentialSubjectDef {
 
 	private CredentialField issuing_country;
 
-	private CredentialField un_distinguishing_sing;
+	private CredentialField un_distinguishing_sign;
 
 	private CredentialField portrait;
 
@@ -88,12 +88,12 @@ public class CredentialMDLSubject implements CredentialSubjectDef {
 		this.issuing_country = issuing_country;
 	}
 
-	public CredentialField getUn_distinguishing_sing() {
-		return un_distinguishing_sing;
+	public CredentialField getUn_distinguishing_sign() {
+		return un_distinguishing_sign;
 	}
 
-	public void setUn_distinguishing_sing(CredentialField un_distinguishing_sing) {
-		this.un_distinguishing_sing = un_distinguishing_sing;
+	public void setUn_distinguishing_sign(CredentialField un_distinguishing_sign) {
+		this.un_distinguishing_sign = un_distinguishing_sign;
 	}
 
 	public CredentialField getPortrait() {

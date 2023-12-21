@@ -305,6 +305,7 @@ public class OidcConfig extends BaseConfig {
 		private String credentialEndpoint;
 		private Set<String> dpopSigningAlgValuesSupported = new HashSet<>();
 		private String jwkFilePath;
+		private String mdocJwkFilePath;
 		private String encrJwkFilePath;
 		private String sub;
 		private List<String> trustChain = new ArrayList<>();
@@ -371,6 +372,14 @@ public class OidcConfig extends BaseConfig {
 
 		public void setJwkFilePath(String jwkFilePath) {
 			this.jwkFilePath = jwkFilePath;
+		}
+
+		public String getMdocJwkFilePath() {
+			return mdocJwkFilePath;
+		}
+
+		public void setMdocJwkFilePath(String mdocJwkFilePath) {
+			this.mdocJwkFilePath = mdocJwkFilePath;
 		}
 
 		public String getEncrJwkFilePath() {

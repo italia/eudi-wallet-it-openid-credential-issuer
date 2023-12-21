@@ -8,11 +8,14 @@ public class CredentialSubject implements CredentialSubjectDef {
 
 	private CredentialField birthdate;
 
+	private CredentialField fiscal_code;
+
 	private CredentialField expiration_date;
 
 	private CredentialField serial_number;
 
 	private CredentialField accompanying_person_right;
+
 
 	public CredentialField getGiven_name() {
 		return given_name;
@@ -36,6 +39,14 @@ public class CredentialSubject implements CredentialSubjectDef {
 
 	public void setBirthdate(CredentialField birthdate) {
 		this.birthdate = birthdate;
+	}
+
+	public CredentialField getFiscal_code() {
+		return fiscal_code;
+	}
+
+	public void setFiscal_code(CredentialField fiscal_code) {
+		this.fiscal_code = fiscal_code;
 	}
 
 	public CredentialField getExpiration_date() {

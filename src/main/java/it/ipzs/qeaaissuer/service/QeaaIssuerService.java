@@ -17,6 +17,18 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.qeaaissuer.dto.PresentationCallbackDto;
+import it.ipzs.qeaaissuer.exception.AudClaimValidationException;
+import it.ipzs.qeaaissuer.exception.HashedWalletInstanceAttestationGenerationException;
+import it.ipzs.qeaaissuer.exception.HashedWiaNotMatchException;
+import it.ipzs.qeaaissuer.exception.InvalidAthException;
+import it.ipzs.qeaaissuer.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.qeaaissuer.exception.ParseDirectPostParamException;
+import it.ipzs.qeaaissuer.exception.PresentationNonceValidationException;
+import it.ipzs.qeaaissuer.exception.RequestUriDpopValidationException;
+import it.ipzs.qeaaissuer.exception.ResponseUriJwtGenerationException;
+import it.ipzs.qeaaissuer.exception.SessionInfoByWiaNotFoundException;
+import it.ipzs.qeaaissuer.exception.VpClaimValidationException;
+import it.ipzs.qeaaissuer.exception.VpTokenNonceValidationException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.util.CallbackResponseJwtUtil;
 import it.ipzs.qeaaissuer.util.DpopUtil;
@@ -52,8 +64,8 @@ public class QeaaIssuerService {
 			sessionUtil.putSessionInfo(si);
 			return responseObjectUtil.generateResponseObject(si);
 		} catch (JOSEException | ParseException e) {
-			log.error("", e);
-			return null;
+			log.error("Error in response uri jwt generation", e);
+			throw new ResponseUriJwtGenerationException(e.getMessage());
 		}
 	}
 
@@ -74,17 +86,18 @@ public class QeaaIssuerService {
 		try {
 			SessionInfo sessionInfoByWia = sessionUtil.getSessionInfoByWia(wia);
 			if (sessionInfoByWia == null) {
-				throw new RuntimeException("Session not found by wallet instance attestation");
+				throw new SessionInfoByWiaNotFoundException("Session not found by wallet instance attestation");
 			}
 			String hashedWia = sessionInfoByWia.getHashedWia();
 			String generatedHashedWia = generateHashedWia(wia);
 			if (!generatedHashedWia.equals(hashedWia)) {
-				throw new RuntimeException("Hashed wallet instance attestation doesn't match: wia in session "
-						+ hashedWia + " - hashed wia generated " + generatedHashedWia);
+				log.error("Hashed wallet instance attestation doesn't match");
+				log.trace("wia in session {}", hashedWia, " - hashed wia generated {}", generatedHashedWia);
+				throw new HashedWiaNotMatchException("Hashed wallet instance attestation doesn't match");
 			}
 			return sessionInfoByWia;
-		} catch (Exception e) {
-			log.error("", e);
+		} catch (NoSuchAlgorithmException e) {
+			log.error("Error in wallet instance attestation hash generation", e);
 			return null;
 		}
 	}
@@ -97,22 +110,25 @@ public class QeaaIssuerService {
 			String ath = dpopUtil.getAthClaim(claimsSet);
 
 			if (!htuClaim.contains("/request_uri") || !htmClaim.equals("GET")) {
-				throw new IllegalArgumentException("Invalid claims: " + htmClaim + " - " + htuClaim);
+				throw new InvalidHtmAndHtuClaimsException("Invalid claims: " + htmClaim + " - " + htuClaim);
 			}
 			String generateHashedWia = generateHashedWia(wiaAuth);
 			if (ath == null) {
-				throw new IllegalArgumentException("Missing ath claim");
+				log.error("ath claim is null");
+				throw new InvalidAthException("Missing ath claim");
 			}
 			if (!generateHashedWia.equals(ath)) {
-				log.error("ath {} - hashed generated {}", ath, generateHashedWia);
-				log.error("wia {}", wiaAuth);
-				throw new IllegalArgumentException("Invalid ath claim: " + ath + " - hashedWia " + generateHashedWia);
+				log.debug("ath {} - hashed generated {}", ath, generateHashedWia);
+				log.debug("wia {}", wiaAuth);
+				log.error("invalid ath claim");
+				throw new InvalidAthException("Invalid ath claim");
 			}
 		} catch (ParseException | JOSEException e) {
-			log.error("", e);
-			throw new RuntimeException("", e);
+			log.error("request uri dpop validation failed", e);
+			throw new RequestUriDpopValidationException(e);
 		} catch (NoSuchAlgorithmException e) {
-			log.error("", e);
+			log.error("hashed wallet instance attestation generation failed", e);
+			throw new HashedWalletInstanceAttestationGenerationException(e);
 		}
 
 	}
@@ -127,11 +143,12 @@ public class QeaaIssuerService {
 			Map<String, Object> cnfPid = pidService.extractPidCredentialCnf(vpTokenClaims.getStringClaim("vp"));
 			vpTokenUtil.validate(decryptedPresentation.getVp_token(), cnfPid);
 			verifyPidCredentialsAndStorePidClaims(vpTokenClaims, sessionInfoByState);
-			log.info("session found: {}", sessionInfoByState);
+			log.debug("session found: {}", sessionInfoByState);
+			log.info("Pid credential verified and stored");
 			return sessionInfoByState;
 		} catch (JOSEException | ParseException | NoSuchAlgorithmException e) {
 			log.error("", e);
-			throw e;
+			throw new ParseDirectPostParamException("Error during direct post param parsing");
 		}
 
 	}
@@ -141,7 +158,7 @@ public class QeaaIssuerService {
 		String vpClaim = vpTokenClaims.getStringClaim("vp");
 		if (vpClaim == null) {
 			log.error("vp claim validation in vp_token failed - vp claim null");
-			throw new RuntimeException("vc claim validation in vp_token failed");
+			throw new VpClaimValidationException("vp claim validation in vp_token failed - vp claim is null");
 		}
 		pidService.validatePidCredential(vpClaim);
 		Map<String, Object> pidCredentialInfo = pidService.extractPidCredentialInfo(vpClaim);
@@ -153,19 +170,19 @@ public class QeaaIssuerService {
 	private void verifyVpTokenClaims(JWTClaimsSet vpTokenClaims, SessionInfo si) throws ParseException {
 		Object audClaimObj = vpTokenClaims.getClaim("aud");
 		if (audClaimObj instanceof Collection<?>) {
-			List<String> audClaimList = ((Collection<?>) audClaimObj).stream()
-					.filter(String.class::isInstance).map(String.class::cast).toList();
+			List<String> audClaimList = ((Collection<?>) audClaimObj).stream().filter(String.class::isInstance)
+					.map(String.class::cast).toList();
 
 			if (!audClaimList.contains(audUriClaim)) {
 				log.error("aud claim validation in vp_token failed - aud expected {} - aud received {}", audUriClaim,
 						audClaimList);
-				throw new RuntimeException("aud claim validation in vp_token failed");
+				throw new AudClaimValidationException("aud claim validation in vp_token failed");
 			}
 			String nonceClaim = vpTokenClaims.getStringClaim("nonce");
 			if (!si.getRequestUriNonce().equals(nonceClaim)) {
-				log.error("aud claim validation in vp_token failed - aud expected {} - aud received {}", audUriClaim,
-						audClaimList);
-				throw new RuntimeException("aud claim validation in vp_token failed");
+				log.error("nonce claim validation in vp_token failed - nonce expected {} - nonce received {}", si.getRequestUriNonce(),
+						nonceClaim);
+				throw new VpTokenNonceValidationException("nonce claim validation in vp_token failed");
 			}
 		} else {
 			String audClaim = (String) audClaimObj;
@@ -173,16 +190,15 @@ public class QeaaIssuerService {
 			if (!audUriClaim.equals(audClaim)) {
 				log.error("aud claim validation in vp_token failed - aud expected {} - aud received {}", audUriClaim,
 						audClaim);
-				throw new RuntimeException("aud claim validation in vp_token failed");
+				throw new AudClaimValidationException("aud claim validation in vp_token failed");
 			}
 			String nonceClaim = vpTokenClaims.getStringClaim("nonce");
 			if (!si.getRequestUriNonce().equals(nonceClaim)) {
-				log.error("aud claim validation in vp_token failed - aud expected {} - aud received {}", audUriClaim,
-						audClaim);
-				throw new RuntimeException("aud claim validation in vp_token failed");
+				log.error("nonce claim validation in vp_token failed - nonce expected {} - nonce received {}", si.getRequestUriNonce(),
+						nonceClaim);
+				throw new VpTokenNonceValidationException("nonce claim validation in vp_token failed");
 			}
 		}
-
 
 	}
 
@@ -194,7 +210,7 @@ public class QeaaIssuerService {
 			log.error(
 					"Nonce validation failed in authorization callback: nonce from session {} - nonce from callback request {}",
 					requestUriNonce, nonceFromPresentation);
-			throw new RuntimeException("Nonce validation failed in authorization callback");
+			throw new PresentationNonceValidationException("Nonce validation failed in authorization callback");
 		}
 
 	}

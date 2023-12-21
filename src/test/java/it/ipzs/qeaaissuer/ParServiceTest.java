@@ -23,6 +23,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.qeaaissuer.dto.Cnf;
 import it.ipzs.qeaaissuer.dto.ParResponse;
+import it.ipzs.qeaaissuer.exception.ParJwtRequestValidationException;
+import it.ipzs.qeaaissuer.exception.ParRequestJwtMissingParameterException;
 import it.ipzs.qeaaissuer.service.ParService;
 import it.ipzs.qeaaissuer.util.ParRequestJwtUtil;
 import it.ipzs.qeaaissuer.util.SessionUtil;
@@ -93,7 +95,7 @@ class ParServiceTest {
 		Cnf cnf = mock(Cnf.class);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(ParRequestJwtMissingParameterException.class,
 				() -> parService.generateRequestUri("missingParameterRequest", cnf, null));
 		
 	}
@@ -104,7 +106,7 @@ class ParServiceTest {
 		when(parRequestJwtUtil.parse(anyString())).thenThrow(new ParseException("Parse Error", 0));
 		Cnf cnf = mock(Cnf.class);
 		// Test and Verify
-		assertThrows(RuntimeException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf, null));
+		assertThrows(ParJwtRequestValidationException.class, () -> parService.generateRequestUri("parseErrorRequest", cnf, null));
 	}
 }
 

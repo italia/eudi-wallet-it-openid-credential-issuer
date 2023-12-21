@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class IssuerSignedItemDto {
 
-	private String digestID;
+	private int digestID;
 
 	private String random;
 

@@ -74,21 +74,21 @@ public class CallbackResponseJwtUtil {
 
 	public PresentationCallbackDto decrypt(String jweString)
 			throws JOSEException, ParseException, NoSuchAlgorithmException {
-		log.info("encrypted jwt: {}", jweString);
+		log.debug("encrypted jwt: {}", jweString);
 		EncryptedJWT jweObject = EncryptedJWT.parse(jweString);
 
 		RSADecrypter rsaDecrypter = new RSADecrypter(
 				oidcWrapper.getRelyingPartyEncryptionJWK().toRSAKey());
-		log.info("rsa Key: {}", oidcWrapper.getRelyingPartyEncryptionJWK());
-		log.info("supporthed encr method {}", rsaDecrypter.supportedEncryptionMethods());
-		log.info("jwe parsed string {}", jweObject.getParsedString());
-		log.info("jwe claim set {}", jweObject.getJWTClaimsSet());
-		log.info("jwe payload {}", jweObject.getPayload());
+		log.debug("rsa Key: {}", oidcWrapper.getRelyingPartyEncryptionJWK());
+		log.debug("supporthed encr method {}", rsaDecrypter.supportedEncryptionMethods());
+		log.debug("jwe parsed string {}", jweObject.getParsedString());
+		log.debug("jwe claim set {}", jweObject.getJWTClaimsSet());
+		log.debug("jwe payload {}", jweObject.getPayload());
 
 		jweObject.decrypt(rsaDecrypter);
 
 
-		log.info("decrypted? {}", jweObject.getJWTClaimsSet());
+		log.debug("decrypted? {}", jweObject.getJWTClaimsSet());
 		PresentationCallbackDto decryptedPresentation = PresentationCallbackDto.builder()
 				.nonce(jweObject.getJWTClaimsSet().getStringClaim("nonce"))
 				.state(jweObject.getJWTClaimsSet().getStringClaim("state"))
@@ -98,7 +98,8 @@ public class CallbackResponseJwtUtil {
 				.definition_id((String) psClaims.get("definition_id")).id((String) psClaims.get("id")).build();
 		decryptedPresentation.setPresentation_submission(ps);
 
-		log.info("presentation callback params: {}", decryptedPresentation);
+		log.debug("presentation callback params: {}", decryptedPresentation);
+		log.info("Presentation jwt decrypted");
 
 		return decryptedPresentation;
 	}

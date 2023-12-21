@@ -38,6 +38,7 @@ public class EDCUtil {
 				result.setSerialeCarta("00000000");
 				result.setDirittoAccompangatore(1);
 			} else {
+				log.info("EDC info acquired");
 				result.setScadenzaCarta(alignDateFormat(result.getScadenzaCarta()));
 				result.setDataNascita(alignDateFormat(result.getDataNascita()));
 			}
@@ -77,7 +78,7 @@ public class EDCUtil {
 				Date date = expectedFromService.parse(sourceDate);
 				result = required.format(date);
 			} catch (ParseException e) {
-				log.error("", e);
+				log.error("EDC service date info format failed", e);
 				result = "1970-01-01";
 			}
 		}

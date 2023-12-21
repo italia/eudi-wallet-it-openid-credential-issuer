@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.1.5</version>
+		<version>3.2.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>qeaa-issuer</artifactId>
-	<version>1.4.7</version>
+	<version>1.5.0</version>
 	<name>qeaa-issuer</name>
 	<description>QEAA Issuer</description>
 	<properties>
 		<java.version>17</java.version>
-		<snakeyaml.version>2.0</snakeyaml.version>
+		<logback-core.version>1.4.14</logback-core.version>
+		<logback-classic.version>1.4.14</logback-classic.version>
+		<logback.version>1.4.14</logback.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -36,11 +41,17 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>com.vaadin.external.google</groupId>
+					<artifactId>android-json</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.0.0</version>
+			<version>2.3.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.nimbusds</groupId>
@@ -125,12 +136,14 @@
 							<goal>install-file</goal>
 						</goals>
 						<configuration>
-							<file>${project.basedir}/lib/forked-local/cose-java-forked-1.1.1.jar</file>
+							<file>
+								${project.basedir}/lib/forked-local/cose-java-forked-1.1.1.jar</file>
 							<groupId>com.augustcellars.cose</groupId>
 							<artifactId>cose-java-forked</artifactId>
 							<version>1.1.1</version>
 							<packaging>jar</packaging>
-							<pomFile>${project.basedir}/lib/forked-local/cose-java-forked-1.1.1.pom</pomFile>
+							<pomFile>
+								${project.basedir}/lib/forked-local/cose-java-forked-1.1.1.pom</pomFile>
 						</configuration>
 					</execution>
 				</executions>

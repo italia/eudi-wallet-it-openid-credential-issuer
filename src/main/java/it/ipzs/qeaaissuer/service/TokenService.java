@@ -8,6 +8,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.nimbusds.jose.JOSEException;
@@ -22,6 +23,11 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 import it.ipzs.qeaaissuer.dto.TokenResponse;
+import it.ipzs.qeaaissuer.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.qeaaissuer.exception.PkceCodeValidationException;
+import it.ipzs.qeaaissuer.exception.SessionInfoByClientIdNotFoundException;
+import it.ipzs.qeaaissuer.exception.TokenCodeValidationException;
+import it.ipzs.qeaaissuer.exception.TokenDpopParsingException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.util.DpopUtil;
 import it.ipzs.qeaaissuer.util.SessionUtil;
@@ -36,6 +42,10 @@ public class TokenService {
 	private final SRService srService;
 	private final DpopUtil dpopUtil;
 	private final SessionUtil sessionUtil;
+	
+	@Value("${base-url}")
+	private String baseUrl;
+
 
 	public TokenResponse generateTokenResponse(String clientId, String dpop) throws JOSEException, ParseException {
 		String nonce = srService.generateRandomByByteLength(32);
@@ -58,13 +68,14 @@ public class TokenService {
 		ECKey ecJWK = new ECKeyGenerator(Curve.P_256).keyID(dpopUtil.getKid(dpop)).generate(); // TODO kid check
 		String jkt = ecJWK.computeThumbprint().toString();
 		JWSSigner signer = new ECDSASigner(ecJWK);
+		String url = "https://".concat(baseUrl).concat("/token");
 
 		JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
 				.subject("sub_pairwise")
 				.issueTime(new Date())
 				.jwtID(UUID.randomUUID().toString())
-				.audience("https://api.eudi-wallet-it-issuer.it/token") // TODO must match client_id
-				.claim("client_id", "https://api.eudi-wallet-it-issuer.it/token") // TODO https url that identifies RP
+				.audience(url) // TODO must match client_id
+				.claim("client_id", url) // TODO https url that identifies RP
 				.claim("nonce", nonce)
 				.claim("jkt", jkt)
 				.expirationTime(new Date(new Date().getTime() + 3600 * 1000)) // TODO config expiration time
@@ -85,11 +96,11 @@ public class TokenService {
 
 			// TODO better check uri
 			if (!htuClaim.endsWith("/token") || !htmClaim.equals("POST")) {
-				throw new IllegalArgumentException("Invalid claims: " + htmClaim + " - " + htuClaim);
+				throw new InvalidHtmAndHtuClaimsException("Invalid claims: " + htmClaim + " - " + htuClaim);
 			}
 		} catch (ParseException | JOSEException e) {
-			log.error("", e);
-			throw new RuntimeException("", e);
+			log.error("Token request Dpop parse error", e);
+			throw new TokenDpopParsingException("Token request Dpop parse error");
 		}
 	}
 
@@ -97,20 +108,20 @@ public class TokenService {
 		log.debug("clientId {} - code {} - codeVerifier {}", clientId, code, codeVerifier);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
 		log.debug("sessionInfo {}", sessionInfo);
-		if (sessionInfo != null && sessionInfo.getCode() != null) {
-			if (sessionInfo.getResponseCode().equals(code)) {
+		if (sessionInfo != null) {
+			if (sessionInfo.getResponseCode() != null && sessionInfo.getResponseCode().equals(code)) {
 				String calculatedCodeChallenge = encodeForPkceVerify(codeVerifier);
 				if (!calculatedCodeChallenge.equals(sessionInfo.getCodeChallenge())) {
 					log.error(
 							"Error pkce validation: codeChallenge calculated {} - codeChallenge in session {} - codeVerifier {}",
 							calculatedCodeChallenge, sessionInfo.getCodeChallenge(), codeVerifier);
-					throw new IllegalArgumentException("No match between code verifier and code challenge");
+					throw new PkceCodeValidationException("No match between code verifier and code challenge");
 				}
 			} else
-				throw new IllegalArgumentException("No match between code and client id");
+				throw new TokenCodeValidationException("No match between code and client id");
 		} else {
-			log.error("Session info null or without code object! {}", sessionInfo);
-			throw new IllegalArgumentException("Session info null or without code object");
+			log.error("Session info null, clientId unknown");
+			throw new SessionInfoByClientIdNotFoundException("Session info null, clientId unknown");
 		}
 
 	}

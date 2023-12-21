@@ -6,6 +6,7 @@ can maintain their privacy and identity over the internet.
 
 ## Release versions
 
+- 1.5.0 - fix MDOC-CBOR, log and exceptions
 - 1.4.0 - mDL credentials, in MDOC-CBOR and SD-JWT formats.
 - 1.3.0 - fix naming in project
 - 1.2.0 - European Disability Card credentials

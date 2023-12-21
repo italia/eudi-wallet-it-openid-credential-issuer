@@ -13,13 +13,16 @@ springdoc:
   - it.ipzs.qeaaissuer.controller
   paths-to-exclude:
   - /cie/**
+base-url: api.eudi-wallet-it-issuer.it
 auth-controller:
-  redirect-url: https://api.eudi-wallet-it-issuer.it/request_uri
-  client-url: https://api.eudi-wallet-it-issuer.it
+  redirect-url: https://${base-url}/request_uri
+  client-url: https://${base-url}
 consent-controller:
-  consent-url: https://api.eudi-wallet-it-issuer.it/cie/consent
-  accepted-url: https://api.eudi-wallet-it-issuer.it/cie/accepted
-  callback-url: https://api.eudi-wallet-it-issuer.it/callback
+  consent-url: https://${base-url}/cie/consent
+  accepted-url: https://${base-url}/cie/accepted
+  callback-url: https://${base-url}/callback
+vp-token:
+  aud-uri: https://${base-url}/callback
 logging:
   level:
     '[it.ipzs.qeaaissuer.controller.AuthController]': WARN
@@ -27,6 +30,8 @@ keys:
   directory-path: ${user.home}/key
   path: ${keys.directory-path}/eudi-pp-key-jwk.json
   public-jwk-set-path: ${keys.directory-path}/eudi-pp-public-jwk.json
+  mdoc-path: ${keys.directory-path}/eudi-pp-mdoc-key-jwk.json
+  mdoc-public-path: ${keys.directory-path}/eudi-pp-mdoc-public-key-jwk.json
   encr-path: ${keys.directory-path}/eudi-encr-rp-key-jwk.json
   public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-rp-public-key-jwk.json
 pid-provider: #pid provider ES
@@ -37,13 +42,13 @@ oidc:
    hosts:
       trust-anchor: 127.0.0.1
       cie-provider: 127.0.0.1
-      relying-party: 127.0.0.1
+      relying-party: ${base-url}
 
       
    # required for onboarding checks and also for all the leafs
    default-trust-anchor: "http://${oidc.hosts.trust-anchor}:8000/"
 
-   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://api.eudi-wallet-it-issuer.it/rp/"
+   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://${base-url}/rp/"
 
    # List of trust anchors
    trust-anchors:
@@ -68,17 +73,17 @@ oidc:
       - offline_access
       token-endpoint-auth-method: 
       - private_key_jwt
-      client-id: "http://${oidc.hosts.relying-party}:8080/rp"
+      client-id: "http://${oidc.hosts.relying-party}/rp"
       redirect-uris:
-      - "http://${oidc.hosts.relying-party}:8080/callback"
+      - "http://${oidc.hosts.relying-party}/callback"
       request-uris:
-      - "http://${oidc.hosts.relying-party}:8080/request_uri"
+      - "http://${oidc.hosts.relying-party}/request_uri"
       jwk-file-path: ${user.home}/oidc-rp-jwk.json
       trust-marks-file-path: ${user.home}/oidc-rp-trust-marks.json
       encr-jwk-file-path: ${user.home}/key/eudi-encr-rp-key-jwk.json      
 
    openid-credential-issuer:
-      credential-issuer: 127.0.0.1:8080
+      credential-issuer: ${base-url}
       id: eudi-wallet-it-issuer.it
       dpop-signing-alg-values-supported:
       - RS256
@@ -87,10 +92,11 @@ oidc:
       pushed-authorization-request-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/as/par"
       credential-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/credential"
       jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
-      sub: "http://${oidc.hosts.relying-party}:8080/ci"
+      sub: "http://${oidc.hosts.relying-party}/ci"
+      mdoc-jwk-file-path: ${user.home}/key/eudi-pp-mdoc-key-jwk.json
    federation-entity:
-     homepage-uri: "http://${oidc.hosts.relying-party}:8080/rp"
-     organization-name: "EUDI IT Wallet Issuer"
-     policy-uri: "http://${oidc.hosts.relying-party}:8080/rp"
-     tos-uri: "http://${oidc.hosts.relying-party}:8080/rp"
-     logo-uri:  "http://${oidc.hosts.relying-party}:8080/public/logo.svg"
+     homepage-uri: "http://${oidc.hosts.relying-party}/rp"
+     organization-name: "Istituto Poligrafico e Zecca dello Stato"
+     policy-uri: "http://${oidc.hosts.relying-party}/rp"
+     tos-uri: "http://${oidc.hosts.relying-party}/rp"
+     logo-uri:  "http://${oidc.hosts.relying-party}/public/logo.svg"

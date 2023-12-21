@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -899,12 +900,12 @@ public class OidcHandler {
 		RSAKey genKey = JWTHelper.parseRSAKey(generalJwk);
 
 
-		logger.info("Configured jwk\n {}", jwk);
+		logger.debug("Configured jwk\n {}", jwk);
 
 		JSONArray jsonPublicJwk = new JSONArray()
 				.put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
 
-		logger.info("Configured public jwk\n {}", jsonPublicJwk.toString(2));
+		logger.debug("Configured public jwk\n {}", jsonPublicJwk.toString(2));
 
 		JWKSet jwkSet = new JWKSet(List.of(jwk, encrKey));
 
@@ -952,20 +953,29 @@ public class OidcHandler {
 		JSONObject credJson = new JSONObject();
 
 		String credJwkString = credentialOptions.getJwk();
+		String mdocCredJwkString = credentialOptions.getMdocJwk();
 
 		JWKSet credJwkSet = null;
-		if (Validator.isNullOrEmpty(credJwkString)) {
+		if (Validator.isNullOrEmpty(credJwkString) || Validator.isNullOrEmpty(mdocCredJwkString)) {
 			logger.error("cannot load credential jwk");
 		} else {
 			RSAKey credJwk = JWTHelper.parseRSAKey(credJwkString);
 
-			logger.info("Configured credential jwk\n {}", credJwk.toJSONString());
+			logger.debug("Configured credential jwk\n {}", credJwk.toJSONString());
 
 			JSONArray credJsonPublicJwk = new JSONArray().put(new JSONObject(credJwk.toPublicJWK().toJSONObject()));
 
-			logger.info("Configured public jwk\n {}", credJsonPublicJwk.toString(2));
+			logger.debug("Configured public jwk\n {}", credJsonPublicJwk.toString(2));
 
-			credJwkSet = new JWKSet(credJwk);
+			ECKey mdocCredJwk = JWTHelper.parseECKey(mdocCredJwkString);
+			logger.debug("Configured credential jwk for mdoc\n {}", mdocCredJwk.toJSONString());
+
+			JSONArray mdocCredJsonPublicJwk = new JSONArray()
+					.put(new JSONObject(mdocCredJwk.toPublicJWK().toJSONObject()));
+
+			logger.debug("Configured public jwk for mdoc\n {}", mdocCredJsonPublicJwk.toString(2));
+
+			credJwkSet = new JWKSet(List.of(credJwk, mdocCredJwk));
 
 		}
 		credJson.put("credential_issuer", credentialOptions.getCredentialIssueUrl());

@@ -24,6 +24,8 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.ipzs.qeaaissuer.exception.PidCredentialVerifyException;
+import it.ipzs.qeaaissuer.exception.PidProviderConfigurationRetrievalException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,7 +48,7 @@ public class PidCredentialService {
 		JWSVerifier verifier = new RSASSAVerifier(pidJwk);
 		if (Boolean.FALSE.equals(signedJwt.verify(verifier))) {
 			log.error("PID Credential JWT not verified");
-			throw new RuntimeException("PID Credential JWT not verified");
+			throw new PidCredentialVerifyException("PID Credential JWT not verified");
 		}
 
 	}
@@ -63,7 +65,7 @@ public class PidCredentialService {
 		} catch (RestClientException | URISyntaxException e) {
 			log.error("Error in pid provider config retrieval", e);
 
-			throw new RuntimeException(e);
+			throw new PidProviderConfigurationRetrievalException(e);
 		}
 
 		JSONObject oidcObj = pidConfig.getJSONObject("metadata").getJSONObject("openid_credential_issuer");

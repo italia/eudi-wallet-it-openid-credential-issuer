@@ -49,6 +49,7 @@ import it.ipzs.qeaaissuer.dto.IssuerSignedItemDto;
 import it.ipzs.qeaaissuer.dto.MdocCborDto;
 import it.ipzs.qeaaissuer.dto.MdocDocument;
 import it.ipzs.qeaaissuer.dto.MobileSecurityObjectPayload;
+import it.ipzs.qeaaissuer.exception.MdocCborX5CGenerationException;
 import it.ipzs.qeaaissuer.oidclib.OidcWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,9 +65,9 @@ public class MdocCborService {
 	public String generateMdocCbor(MdocCborDto cborDto, JWK deviceKey)
 			throws CborParseException, IOException, CoseException, CborConversionException,
 			NoSuchAlgorithmException, ParseException, JOSEException {
-		List<String> dateParams = List.of("birth_date", "issue_date", "expiry_date");
+		List<String> dateParams = List.of("birthdate", "issue_date", "expiry_date");
 		ObjectMapper mapper = new CBORMapper();
-		JWK jwk = oidcWrapper.getCredentialIssuerJWK();
+		JWK jwk = oidcWrapper.getMdocCredentialIssuerJWK();
 		CborMap cmap = CborMap.create();
 		CborTextString version = CborTextString.create(cborDto.getVersion());
 		cmap.put("version", version);
@@ -87,14 +88,12 @@ public class MdocCborService {
 				CborArray array = CborArray.create();
 				for (IssuerSignedItemDto item : list) {
 					CborMap tmpItem = CborMap.create();
-					tmpItem.put("digestID", CborTextString.create(item.getDigestID()));
+					tmpItem.put("digestID", CborObject.createFromJavaObject(item.getDigestID()));
 					tmpItem.put("elementIdentifier", CborTextString.create(item.getElementIdentifier()));
 					tmpItem.put("random", CborByteString.create(srService.generateRandomByte(16)));
 					if (dateParams.contains(item.getElementIdentifier())) {
-						byte[] writeValueAsBytes = mapper.writeValueAsBytes(item.getElementValue());
-						CborByteString byteString = CborByteString.create(writeValueAsBytes, 0,
-								writeValueAsBytes.length, 1004);
-						tmpItem.put("elementValue", byteString);
+						CborObject date = cborDateFieldGeneration((String) item.getElementValue());
+						tmpItem.put("elementValue", date);
 					} else if ("driving_privileges".equals(item.getElementIdentifier())) {
 						CborArray dpArray = CborArray.create();
 						CborMap tmpMap = CborMap.create();
@@ -103,19 +102,20 @@ public class MdocCborService {
 						String vcc = dpObj.get("vehicle_category_code");
 						CborObject vccCbor = CborObject.createFromCborByteArray(mapper.writeValueAsBytes(vcc));
 						tmpMap.put("vehicle_category_code", vccCbor);
-
 						String d1 = dpObj.get("issue_date");
-						byte[] writeValueAsBytes = mapper.writeValueAsBytes(d1);
-						CborByteString byteString = CborByteString.create(writeValueAsBytes, 0,
-								writeValueAsBytes.length, 1004);
-						tmpMap.put("issue_date", byteString);
+						CborObject issueDate = cborDateFieldGeneration(d1);
+						tmpMap.put("issue_date", issueDate);
 
 						String d2 = dpObj.get("expiry_date");
-						byte[] d2bytes = mapper.writeValueAsBytes(d2);
-						CborByteString edBs = CborByteString.create(d2bytes, 0, d2bytes.length, 1004);
-						tmpMap.put("expiry_date", edBs);
+						CborObject expDate = cborDateFieldGeneration(d2);
+						tmpMap.put("expiry_date", expDate);
 						dpArray.add(tmpMap);
-						tmpItem.put("driving_privileges", dpArray);
+						tmpItem.put("elementValue", dpArray);
+
+					} else if ("portrait".equals(item.getElementIdentifier())) {
+						CborObject portrait = CborByteString
+								.create(item.getElementValue().toString().getBytes());
+						tmpItem.put("elementValue", portrait);
 
 					} else {
 						tmpItem.put("elementValue",
@@ -131,26 +131,23 @@ public class MdocCborService {
 
 			}
 
-			CborByteString ctagNamespaces = CborByteString.create(nameSpacesMap.toCborByteArray(), 0,
-					nameSpacesMap.toCborByteArray().length, 24);
-			issuerSignedMap.put("nameSpaces", ctagNamespaces);
+			issuerSignedMap.put("nameSpaces", nameSpacesMap);
 
 			CborMap mobileSecurityObj = CborMap.create(24);
 			mobileSecurityObj.put("docType", CborTextString.create("eu.europa.ec.eudiw.pid.1"));
 			mobileSecurityObj.put("version", version);
 			CborMap validityMap = CborMap.create();
 			LocalDateTime currentDateTime = LocalDateTime.now();
-
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
-			byte[] nowDateBytes = mapper.writeValueAsBytes(currentDateTime.format(formatter));
+			CborObject signedDate = cborDateFieldGeneration(currentDateTime.format(formatter));
 			validityMap.put("signed",
-					CborByteString.create(nowDateBytes, 0, nowDateBytes.length, 0));
+					signedDate);
 			validityMap.put("validFrom",
-					CborByteString.create(nowDateBytes, 0, nowDateBytes.length, 0));
+					signedDate);
 			LocalDateTime expr = currentDateTime.plusYears(1);
-			byte[] expDateBytes = mapper.writeValueAsBytes(expr.format(formatter));
+			CborObject validUntilDate = cborDateFieldGeneration(expr.format(formatter));
 			validityMap.put("validUntil",
-					CborByteString.create(expDateBytes, 0, expDateBytes.length, 0));
+					validUntilDate);
 			mobileSecurityObj.put("validityInfo", validityMap);
 			mobileSecurityObj.put("digestAlgorithm", CborTextString.create("SHA-256"));
 			CborMap digestValues = CborMap.create();
@@ -168,7 +165,7 @@ public class MdocCborService {
 				digestValues.put((String) entry.getKey().toJavaObject(), entryMap);
 			}
 			mobileSecurityObj.put("valueDigests", digestValues);
-			OneKey key = new OneKey(jwk.toRSAKey().toPublicKey(), jwk.toRSAKey().toPrivateKey());
+			OneKey key = new OneKey(jwk.toECKey().toPublicKey(), jwk.toECKey().toPrivateKey());
 			PublicKey publicKey = deviceKey.toECKey().toPublicKey();
 			if(publicKey instanceof ECPublicKey ecKey) {
 				byte[] xByte = ecKey.getW().getAffineX().toByteArray();
@@ -190,27 +187,25 @@ public class MdocCborService {
 					mobileSecurityObj.toCborByteArray().length, 24);
 			try {
 
-				COSE.Sign1Message co = new COSE.Sign1Message();
-				co.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject(-37), Attribute.PROTECTED);
+				COSE.Sign1Message co = new COSE.Sign1Message(false);
+				co.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject(-7), Attribute.PROTECTED);
 				co.SetContent(payload.byteArrayValue());
 				CborByteString x5chain = CborByteString.create(getX509().getEncoded(), 0,
 						getX509().getEncoded().length);
+				
 				co.addAttribute(CBORObject.FromObject(33),
-						CBORObject.FromObject(
-								x5chain.toString()),
+						CBORObject.FromObject(x5chain.byteArrayValue()),
 						Attribute.UNPROTECTED);
 				
 				co.sign(key);
 				CborObject issuerAuthObj = CborObject.createFromCborByteArray(co.EncodeToBytes());
-				CborArray issuerAuth = CborArray.create();
-				issuerAuth.add(issuerAuthObj);
-				issuerSignedMap.put("issuerAuth", issuerAuth);
+				issuerSignedMap.put("issuerAuth", issuerAuthObj);
 			}
 			 catch (Exception e1) {
-					log.error("", e1);
+					log.error("issuerAuth COSE object creation failed", e1);
 				}
 
-			documentMap.put("issuerSigned", issuerSignedMap);
+				documentMap.put("issuerSigned", issuerSignedMap);
 			doclist.add(documentMap);
 
 		}
@@ -223,6 +218,15 @@ public class MdocCborService {
 
 	}
 
+	private CborObject cborDateFieldGeneration(String dateString) throws CborConversionException {
+
+		CborObject t = CborObject.createFromJavaObject(dateString);
+		String ts = t.toString().replace("\"", "");
+		CborObject date = CborTextString.create(ts.getBytes(), 0, ts.getBytes().length, 1004);
+		return date;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public MdocCborDto parseMdocCbor(String hexCborTest)
 			throws IOException, CborParseException, CoseException {
 
@@ -259,23 +263,21 @@ public class MdocCborService {
 
 			CborMap issSigned = (CborMap) doc.get("issuerSigned");
 			log.info("issSigned {}", issSigned);
-			CborObject issuerAuth = issSigned.get("issuerAuth");
+			CborArray issuerAuth = (CborArray) issSigned.get("issuerAuth");
 			log.info("issuerAuth {}", issuerAuth);
 			
-
-			COSE.Sign1Message coseMessage = (COSE.Sign1Message) Message
-					.DecodeFromBytes(issuerAuth.toCborByteArray(), MessageTag.Sign1);
+			COSE.Sign1Message coseMessage = (COSE.Sign1Message) Message.DecodeFromBytes(issuerAuth.toCborByteArray(),
+					MessageTag.Sign1);
 			log.info("{}", coseMessage);
 			byte[] getContent = coseMessage.GetContent();
-			CborByteString payload = (CborByteString) CborObject.createFromCborByteArray(getContent);
+			CborMap payload = (CborMap) CborObject.createFromCborByteArray(getContent);
 			log.info("payload {}", payload);
-			MobileSecurityObjectPayload mobileSecurityObject = mapper.readValue(payload.toJavaObject(),
+			MobileSecurityObjectPayload mobileSecurityObject = mapper.readValue(payload.toCborByteArray(),
 					MobileSecurityObjectPayload.class);
 			log.info("Payload parsed {}", mobileSecurityObject);
 			tmpIs.setIssuerAuth(mobileSecurityObject);
 
 			CborMap nameSpaces = (CborMap) issSigned.get("nameSpaces");
-			log.info("namespaces {}", nameSpaces);
 
 			Map<String, List<IssuerSignedItemDto>> nsMap = new LinkedHashMap<>();
 			if (nameSpaces.areAllKeysStrings()) {
@@ -292,6 +294,31 @@ public class MdocCborService {
 							log.info("byteString {}", next);
 							IssuerSignedItemDto readValue2 = mapper.readValue(next.toJavaObject(),
 									IssuerSignedItemDto.class);
+							if (readValue2.getElementValue().toString().startsWith("[")
+									&& !readValue2.getElementIdentifier().equals("driving_privileges")) {
+								ObjectMapper mp = new ObjectMapper();
+								String writeValueAsString = mp.writeValueAsString(readValue2.getElementValue());
+								readValue2.setElementValue(writeValueAsString);
+							} else if (readValue2.getElementIdentifier().equals("driving_privileges")) {
+								ObjectMapper mp = new ObjectMapper();
+
+								if (readValue2.getElementValue() instanceof List e) {
+									Object map = e.get(0);
+									if (map instanceof Map m) {
+										Object idObj = m.get("issue_date");
+										Object edObj = m.get("expiry_date");
+
+										String writeValueAsString = mp.writeValueAsString(idObj);
+										writeValueAsString = writeValueAsString.replace("\"", "");
+										m.put("issue_date", writeValueAsString);
+
+										writeValueAsString = mp.writeValueAsString(edObj);
+										writeValueAsString = writeValueAsString.replace("\"", "");
+										m.put("expiry_date", writeValueAsString);
+									}
+								}
+
+							}
 							log.info("object {}", readValue2);
 							List<IssuerSignedItemDto> list = nsMap.get(keyString);
 							list.add(readValue2);
@@ -356,27 +383,17 @@ public class MdocCborService {
 	public X509Certificate getX509() throws Exception {
 		String pemCertificateString = """
 				-----BEGIN CERTIFICATE-----
-				MIIDzzCCAregAwIBAgIUUWfJ9xUj0wTkKp1lJQysECCcVFowDQYJKoZIhvcNAQEL
-				BQAwdzELMAkGA1UEBhMCSVQxDTALBgNVBAgMBFJvbWExDTALBgNVBAcMBFJvbWEx
-				DTALBgNVBAoMBElQWlMxFDASBgNVBAMMC3FlYWEtaXNzdWVyMSUwIwYJKoZIhvcN
-				AQkBFhZpcHpzc3ZpbHVwcG9AZ21haWwuY29tMB4XDTIzMTExNzA4MzcyMloXDTI0
-				MTExNjA4MzcyMlowdzELMAkGA1UEBhMCSVQxDTALBgNVBAgMBFJvbWExDTALBgNV
-				BAcMBFJvbWExDTALBgNVBAoMBElQWlMxFDASBgNVBAMMC3FlYWEtaXNzdWVyMSUw
-				IwYJKoZIhvcNAQkBFhZpcHpzc3ZpbHVwcG9AZ21haWwuY29tMIIBIjANBgkqhkiG
-				9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx40unkdttwPy0/4JneOVWFQGzo0DW4Clsiue
-				M6nuIC5nVZUf8cuwjgW6Z8edkKIlFuNWdiFAhgCtEOdzvi5SBY5JB6SNey8aOqaz
-				dW3CxrkUgyRGNK9yIHvfleFl1s1d0apOkvzaGoEfC12iDiY8dAwhKyiHoETjIZfh
-				FiKYeTtt4pV8/9MOmr5SaEwsTnnj9mpuT3mByfUvFdMQcEmHpa8jQ8xWTU4w1RB+
-				QXBXQOFMAFcttg63ZKfyAe7QZv/IV9VG6/oIxDiV05oZZCKwtpVjwYLEe5sWnV5D
-				dCg19kfg8jDTF4EA4zBI3igmdK9tTUfe0YMLqyed+mvqnwnRoQIDAQABo1MwUTAd
-				BgNVHQ4EFgQU2DOTSQKngGhnOdgY/8EhQNYUsMMwHwYDVR0jBBgwFoAU2DOTSQKn
-				gGhnOdgY/8EhQNYUsMMwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC
-				AQEAG0t6onFlGdjp7DTOaROc8qfkPvuM6wZPk5VXewP+Mvv4eQe1M2S5SjX9qHal
-				oKsh2oHL3it2GAYlL0HeE5UQHrov7I5v2RKXv7VPLzvhvj/3UDS0OHTYwj0xHwS5
-				EnA7Ui6dSSN0tx0PyvBdiSAD7o4VTLB850l49KxzlmRYEDT/DaTw37/ZtSS9CpOY
-				OfZ/zAfNa5/ndqlz4bpu3LxhDavkDPoQ2gZ/25b/V/07aYBSlKcpDUAXwrurf/h1
-				MoHQ7fE0uRtEaXdW2tqoRTjD4gOnSQVx5KoN/Hk30eHGLefSpjBaVSLddIFA+Tok
-				iRgRmjYk5jiMhTzrbnGpEfgzcA==
+				MIIB7jCCAZQCCQCAsWXTnDM6FzAKBggqhkjOPQQDAjB/MQswCQYDVQQGEwJJVDEN
+				MAsGA1UECAwEUm9tZTENMAsGA1UEBwwEUm9tZTEZMBcGA1UECgwQUUVBQSBJc3N1
+				ZXIgRGVtbzEZMBcGA1UECwwQUUVBQSBJc3N1ZXIgRGVtbzEcMBoGA1UEAwwTcWVh
+				YS1pc3N1ZXIuZGVtby5pdDAeFw0yMzEyMjExMDAwMzFaFw0yNjA0MjkxMDAwMzFa
+				MH8xCzAJBgNVBAYTAklUMQ0wCwYDVQQIDARSb21lMQ0wCwYDVQQHDARSb21lMRkw
+				FwYDVQQKDBBRRUFBIElzc3VlciBEZW1vMRkwFwYDVQQLDBBRRUFBIElzc3VlciBE
+				ZW1vMRwwGgYDVQQDDBNxZWFhLWlzc3Vlci5kZW1vLml0MFkwEwYHKoZIzj0CAQYI
+				KoZIzj0DAQcDQgAEWMDoR7in9kw7PF5qEsml1OfhYXjKu0DnhgRrC34rRSuvnCS2
+				bMoiWfKQS+s7DJUol5vdmsGJDFWm0q/ZJoV2ozAKBggqhkjOPQQDAgNIADBFAiBY
+				m/VdkIm1CuBJv51MjYMAYMtv8I3jRJMjnOffZ5tPZwIhAN5pHklR0HNqJh3Ra/Sn
+				dYYlfy9iGPiIDWYKrZshoWng
 				-----END CERTIFICATE-----
 								""";
 
@@ -385,8 +402,8 @@ public class MdocCborService {
 
 			return certificate;
 		} catch (CertificateException | IOException e) {
-			log.error("", e);
-			throw e;
+			log.error("Error in generating X509 Certificate", e);
+			throw new MdocCborX5CGenerationException("Error in generating X509 Certificate");
 		}
 	}
 

@@ -13,6 +13,7 @@ import lombok.Setter;
 public class OIDCCredentialIssuerOptions extends GlobalOptions<OIDCCredentialIssuerOptions> {
 
 	private String jwk;
+	private String mdocJwk;
 	private String credentialIssueUrl;
 	private String authorizationEndpoint;
 	private String tokenEndpoint;

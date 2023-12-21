@@ -19,35 +19,42 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.ipzs.qeaaissuer.exception.JwkKeyTypeException;
+import it.ipzs.qeaaissuer.exception.JwsHeaderMissingFieldException;
+import it.ipzs.qeaaissuer.exception.DpopJwtMissingClaimException;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class DpopUtil {
 
-    private static final String TYPE_HEADER = "dpop+jwt";
-    private static final String JTI_CLAIM = "jti";
-    private static final String HTM_CLAIM = "htm";
-    private static final String HTU_CLAIM = "htu";
-    private static final String IAT_CLAIM = "iat";
+	private static final String TYPE_HEADER = "dpop+jwt";
+	private static final String JTI_CLAIM = "jti";
+	private static final String HTM_CLAIM = "htm";
+	private static final String HTU_CLAIM = "htu";
+	private static final String IAT_CLAIM = "iat";
 	private static final String ATH_CLAIM = "ath";
 
-    
 	public JWTClaimsSet parse(String dpop) throws ParseException, JOSEException {
 		SignedJWT jwt = SignedJWT.parse(dpop);
 
 		JWSHeader jwsHeader = jwt.getHeader();
 		validateHeader(jwsHeader);
 		JWK jwk = jwsHeader.getJWK();
-		
+
 		JWSVerifier verifier;
-		 if (jwk instanceof ECKey) {
-				ECKey ecKey = (ECKey) jwk;
-	            verifier = new ECDSAVerifier(ecKey);
-			} else if (jwk instanceof RSAKey) {
-				RSAKey rsaKey = (RSAKey) jwk;
-	            verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
-			} else {
-				throw new IllegalArgumentException("JWK key type not matched: " + jwk.getKeyType().getValue());
-	        }
-		
+		if (jwk instanceof ECKey) {
+			ECKey ecKey = (ECKey) jwk;
+			verifier = new ECDSAVerifier(ecKey);
+		} else if (jwk instanceof RSAKey) {
+			RSAKey rsaKey = (RSAKey) jwk;
+			verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
+		} else {
+			log.error("Jwk key type not matched: expected type ECKey/RSAKey - received type {}",
+					jwk.getKeyType().getValue());
+			throw new JwkKeyTypeException("JWK key type not matched");
+		}
+
 		jwt.verify(verifier);
 		validateClaims(jwt.getJWTClaimsSet());
 
@@ -62,21 +69,25 @@ public class DpopUtil {
 		Object jti = claims.getClaim(JTI_CLAIM);
 
 		if (Stream.of(htm, htu, iat, jti).anyMatch(Objects::isNull)) {
-			throw new IllegalArgumentException("Invalid DPoP - missing claim");
+			log.error("Invalid DPoP - missing claim: htm {} - htu {} - iat {} - jti {}", htm, htu, iat, jti);
+			throw new DpopJwtMissingClaimException("Invalid DPoP - missing claim");
 		}
 	}
 
 	private void validateHeader(JWSHeader jwsHeader) {
 		if (jwsHeader.getType() == null || !TYPE_HEADER.equals(jwsHeader.getType().getType())) {
-			throw new IllegalArgumentException("Type header not matched: " + jwsHeader.getType());
+			log.error("Type header not matched: expected {} - received {}", TYPE_HEADER, jwsHeader.getType());
+			throw new JwsHeaderMissingFieldException("Type header not matched: " + jwsHeader.getType());
 		}
 
 		if (jwsHeader.getAlgorithm() == null) {
-			throw new IllegalArgumentException("Algorithm header is missing");
+			log.error("Algorithm header is null");
+			throw new JwsHeaderMissingFieldException("Algorithm header is missing");
 		}
 
 		if (jwsHeader.getJWK() == null) {
-			throw new IllegalArgumentException("JWK header is missing");
+			log.error("JWK header is null");
+			throw new JwsHeaderMissingFieldException("JWK header is missing");
 		}
 	}
 

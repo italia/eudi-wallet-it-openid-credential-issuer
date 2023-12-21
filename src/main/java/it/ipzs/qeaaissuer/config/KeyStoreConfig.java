@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
@@ -23,6 +25,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.jwk.Curve;
+import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -49,6 +53,12 @@ public class KeyStoreConfig implements CommandLineRunner {
 
 	@Value("${keys.public-encr-jwk-set-path}")
 	private String publicEncrKeyFilePath;
+
+	@Value("${keys.mdoc-path}")
+	private String mdocKeyFilePath;
+
+	@Value("${keys.mdoc-public-path}")
+	private String publicMdocKeyFilePath;
 
 	@Autowired
 	private OidcWrapper oidcWrapper;
@@ -101,6 +111,35 @@ public class KeyStoreConfig implements CommandLineRunner {
 			reload = true;
 		} else {
 			log.debug("{} path exists", keyFilePath);
+		}
+
+		if (!new File(mdocKeyFilePath).exists()) {
+			KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
+			gen.initialize(Curve.P_256.toECParameterSpec());
+			KeyPair keyPair = gen.generateKeyPair();
+
+			JWK jwk = new ECKey.Builder(Curve.P_256, (ECPublicKey) keyPair.getPublic()).keyUse(KeyUse.SIGNATURE)
+					.keyIDFromThumbprint()
+					.privateKey((ECPrivateKey) keyPair.getPrivate()).build();
+
+			try (FileWriter fw = new FileWriter(mdocKeyFilePath)) {
+				fw.write(jwk.toJSONString());
+			} catch (Exception e) {
+				log.error("", e);
+			}
+
+			JSONArray jsonPublicJwk = new JSONArray().put(new JSONObject(jwk.toPublicJWK().toJSONObject()));
+
+			JSONObject pubKeysJsonObj = new JSONObject().put("keys", jsonPublicJwk);
+
+			try (FileWriter fw = new FileWriter(publicMdocKeyFilePath)) {
+				fw.write(pubKeysJsonObj.toString());
+			} catch (Exception e) {
+				log.error("", e);
+			}
+			reload = true;
+		} else {
+			log.debug("{} path exists", mdocKeyFilePath);
 		}
 
 		if (!new File(encrKeyFilePath).exists()) {

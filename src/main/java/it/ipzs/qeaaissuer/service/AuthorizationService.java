@@ -2,6 +2,10 @@ package it.ipzs.qeaaissuer.service;
 
 import org.springframework.stereotype.Service;
 
+import it.ipzs.qeaaissuer.exception.AuthorizationRequestValidationException;
+import it.ipzs.qeaaissuer.exception.SessionInfoByClientIdNotFoundException;
+import it.ipzs.qeaaissuer.exception.SessionInfoByStateNotFoundException;
+import it.ipzs.qeaaissuer.exception.SessionRequestUriNotMatchedException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.util.SessionUtil;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +19,6 @@ public class AuthorizationService {
 	private final SRService srService;
 	private final SessionUtil sessionUtil;
 
-
 	public String generateCode() {
 		return srService.generateRandomByByteLength(32);
 	}
@@ -28,20 +31,34 @@ public class AuthorizationService {
 		log.debug("clientId {} - requestUri {}", clientId, requestUri);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
 		log.debug("sessionInfo {}", sessionInfo);
-		if (sessionInfo != null && sessionInfo.getRequestUri().equals(requestUri) && !sessionInfo.isVerified())
-			return sessionInfo.getState();
-		else
-			throw new IllegalArgumentException("Client ID or request uri unknown");
+		if (sessionInfo != null) {
+			if (sessionInfo.getRequestUri().equals(requestUri) && !sessionInfo.isVerified()) {
+				return sessionInfo.getState();
+			} else {
+				log.error(
+						"Authorization request parameter validation exception: reqeustUri {} - sessioInfo isVerified {}",
+						requestUri, sessionInfo.isVerified());
+				throw new AuthorizationRequestValidationException(
+						"Authorization request parameter validation exception");
+			}
+		} else {
+			log.error("Client id unknown");
+			throw new SessionInfoByClientIdNotFoundException("Client ID or request uri unknown");
+		}
 	}
 
 	public SessionInfo retrieveSessionByClientId(String clientId, String requestUri) {
 		log.debug("clientId {} - requestUri {}", clientId, requestUri);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
 		log.debug("sessionInfo {}", sessionInfo);
-		if (sessionInfo != null && sessionInfo.getRequestUri().equals(requestUri) && !sessionInfo.isVerified())
+		if (sessionInfo == null) {
+			log.error("! client id unknown, no session found");
+			throw new SessionInfoByClientIdNotFoundException("Client ID unknown");
+		}
+		if (sessionInfo.getRequestUri().equals(requestUri) && !sessionInfo.isVerified())
 			return sessionInfo;
 		else
-			throw new IllegalArgumentException("Client ID or request uri unknown");
+			throw new SessionRequestUriNotMatchedException("Request URI unknown");
 	}
 
 	public SessionInfo checkStateParamAndReturnSessionInfo(String state) {
@@ -50,10 +67,9 @@ public class AuthorizationService {
 			sessionInfo.setCode(generateCode());
 			sessionInfo.setVerified(true);
 			sessionUtil.putSessionInfo(sessionInfo);
-		}
-		else {
+		} else {
 			log.debug("sessionInfo {} - state {}", sessionInfo, state);
-			throw new IllegalArgumentException("State param unknown");
+			throw new SessionInfoByStateNotFoundException("State param unknown");
 		}
 
 		return sessionInfo;
@@ -67,7 +83,7 @@ public class AuthorizationService {
 			sessionUtil.putSessionInfo(sessionInfo);
 		} else {
 			log.debug("sessionInfo {} - clientId {}", sessionInfo, clientId);
-			throw new IllegalArgumentException("clientId param unknown");
+			throw new SessionInfoByClientIdNotFoundException("clientId param unknown");
 		}
 
 		return sessionInfo.getTransactionId();

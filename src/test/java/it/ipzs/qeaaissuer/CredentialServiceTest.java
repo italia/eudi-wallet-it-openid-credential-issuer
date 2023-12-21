@@ -29,6 +29,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import it.ipzs.qeaaissuer.dto.CredentialDefinitionDto;
 import it.ipzs.qeaaissuer.dto.CredentialResponse;
 import it.ipzs.qeaaissuer.dto.ProofRequest;
+import it.ipzs.qeaaissuer.exception.CredentialDpopParsingException;
+import it.ipzs.qeaaissuer.exception.CredentialJwtMissingClaimException;
+import it.ipzs.qeaaissuer.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.qeaaissuer.exception.SessionInfoByClientIdNotFoundException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.oidclib.exception.OIDCException;
 import it.ipzs.qeaaissuer.service.CredentialService;
@@ -120,7 +124,7 @@ class CredentialServiceTest {
 		when(dpopUtil.getHtmClaim(jwtClaimsSet)).thenReturn("GET");
 
 		// Test
-		assertThrows(RuntimeException.class, () -> credentialService.checkDpop("DPoP"));
+		assertThrows(InvalidHtmAndHtuClaimsException.class, () -> credentialService.checkDpop("DPoP"));
 
 		// Verify
 		verify(dpopUtil, times(1)).parse("DPoP");
@@ -134,7 +138,7 @@ class CredentialServiceTest {
 		when(dpopUtil.parse(anyString())).thenThrow(new ParseException("Parse Error", 0));
 
 		// Test and Verify
-		assertThrows(RuntimeException.class, () -> credentialService.checkDpop("DPoP"));
+		assertThrows(CredentialDpopParsingException.class, () -> credentialService.checkDpop("DPoP"));
 	}
 
 	@Test
@@ -187,7 +191,7 @@ class CredentialServiceTest {
 		when(proofUtil.parse("jwt")).thenReturn(proofClaims);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(CredentialJwtMissingClaimException.class,
 				() -> credentialService.checkAuthorizationAndProof("authorization", proof));
 	}
 
@@ -213,7 +217,7 @@ class CredentialServiceTest {
 		when(sessionInfo.getNonce()).thenReturn("nonce");
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class,
+		assertThrows(SessionInfoByClientIdNotFoundException.class,
 				() -> credentialService.checkAuthorizationAndProof("authorization", proof));
 	}
 }

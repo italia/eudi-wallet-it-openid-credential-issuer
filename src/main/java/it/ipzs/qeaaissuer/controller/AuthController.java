@@ -25,6 +25,8 @@ import it.ipzs.qeaaissuer.dto.CredentialResponse;
 import it.ipzs.qeaaissuer.dto.ParResponse;
 import it.ipzs.qeaaissuer.dto.ProofRequest;
 import it.ipzs.qeaaissuer.dto.TokenResponse;
+import it.ipzs.qeaaissuer.exception.AuthResponseJwtGenerationException;
+import it.ipzs.qeaaissuer.exception.MalformedCredentialRequestParamException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.service.AuthorizationService;
 import it.ipzs.qeaaissuer.service.CredentialService;
@@ -63,9 +65,11 @@ public class AuthController {
 			@FormParam("client_assertion_type") String client_assertion_type,
 			@FormParam("client_assertion") String client_assertion, @FormParam("request") String request) {
 
+		log.info("Pushed Authorization Request received: clientId {} - codeChallenge {}", client_id, code_challenge);
+
 		log.trace("/as/par params");
-		log.trace("-> response_type {} - code_challenge_method {} - client_assertion_type {}",
-				response_type, code_challenge_method, client_assertion_type);
+		log.trace("-> response_type {} - code_challenge_method {} - client_assertion_type {}", response_type,
+				code_challenge_method, client_assertion_type);
 		log.trace("-> client_id {}", client_id);
 		log.trace("-> code_challenge {}", code_challenge);
 		log.trace("-> client_assertion {}", client_assertion);
@@ -75,6 +79,8 @@ public class AuthController {
 		Object cnf = parService.validateClientAssertionAndRetrieveCnf(client_assertion);
 		ParResponse response = parService.generateRequestUri(request, cnf, client_assertion);
 		log.trace("par response: {}", response);
+
+		log.info("Pushed Authorization Request accepted: {}", response);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
 
@@ -82,6 +88,7 @@ public class AuthController {
 	public ModelAndView authorize(@RequestParam("client_id") String client_id,
 			@RequestParam("request_uri") String request_uri, HttpServletResponse response) throws Exception {
 
+		log.info("Authorize request received: clientId {} - requestUri {}", client_id, request_uri);
 		ModelAndView mav = new ModelAndView("form_post");
 		log.trace("/authorize params");
 		log.trace("client_id {} - request_uri {}", client_id, request_uri);
@@ -89,15 +96,10 @@ public class AuthController {
 		SessionInfo si = null;
 		String responseDirectPost = "";
 		String uri = "";
-		try {
-			si = authService.retrieveSessionByClientId(client_id, request_uri);
+		si = authService.retrieveSessionByClientId(client_id, request_uri);
 
-			uri = redirectUrl.concat("?id=").concat(si.getState());
-			log.trace("authorize response: {}", uri);
-		} catch (Exception e) {
-			log.error("", e);
-			throw e;
-		}
+		uri = redirectUrl.concat("?id=" + si.getState());
+		log.trace("authorize response: {}", uri);
 		String transactionId = authService.generateTransactionIdAndReturnSessionInfo(client_id);
 		if (StringUtil.isBlank(transactionId)) {
 			log.error("Transaction ID not created!");
@@ -105,14 +107,15 @@ public class AuthController {
 		try {
 			responseDirectPost = qeaaIssuerService.generateAuthResponseJwt(client_id, uri);
 		} catch (JOSEException | ParseException e) {
-			log.error("", e);
-			throw e;
+			log.error("Exception in authorize jwt response generation", e);
+			throw new AuthResponseJwtGenerationException(e);
 		}
 		log.trace("/authorize response: {}", responseDirectPost);
 		mav.addObject("response", responseDirectPost);
 		mav.addObject("clientUri", si.getRedirectUri());
 		response.addCookie(new Cookie("transaction_id", transactionId));
 
+		log.info("Authorize request accepted: transactionId {}", transactionId);
 		return mav;
 	}
 
@@ -123,7 +126,9 @@ public class AuthController {
 		log.trace("-> DPoP {}", wiaDpop);
 		log.trace("-> Authorization {}", wiaAuth);
 		log.trace("-> id {}", id);
-		
+
+		log.info("Request uri : id {}", id);
+
 		String clientAssertion = wiaAuth.replace("DPoP ", "");
 		qeaaIssuerService.checkDpop(wiaDpop, clientAssertion);
 		SessionInfo sessionInfo = qeaaIssuerService.retrieveSessionAndCheckWia(clientAssertion);
@@ -136,11 +141,12 @@ public class AuthController {
 			log.trace("--> requestobject response: {}", requestObjectJwt);
 			Map<String, String> responseBody = new HashMap<>();
 			responseBody.put("response", requestObjectJwt);
+			log.info("--> /request_uri - success");
 			return ResponseEntity.ok().body(responseBody);
-		}
-
-		else
+		} else {
+			log.error("--> requestobject is null");
 			return ResponseEntity.internalServerError().build();
+		}
 	}
 
 	@PostMapping("/callback")
@@ -150,6 +156,7 @@ public class AuthController {
 		log.trace("/postCallback params:");
 		String directPostParam = params.get("response");
 		log.trace("response {}", directPostParam);
+		log.info("Post Callback request received");
 		SessionInfo sessionInfo = null;
 		try {
 			sessionInfo = qeaaIssuerService.checkAndReadDirectPostResponse(directPostParam);
@@ -165,37 +172,10 @@ public class AuthController {
 			responseBody.put("status", "OK");
 			responseBody.put("response_code", responseCode);
 			log.trace("postCallback response {}", responseBody);
+			log.info("Post callback request accepted");
 			return ResponseEntity.ok(responseBody);
-		} else
-			return ResponseEntity.internalServerError().build();
-	}
-
-	@GetMapping(path = "/callback", produces = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-	public ResponseEntity<?> getCallback(@RequestParam Map<String, String> params, HttpServletRequest request,
-			HttpServletResponse response) {
-
-		// TODO manage params from eIDAS LoA High callback and redirect to app universal
-		// url
-		log.trace("/getCallback params:");
-		String state = params.get("state");
-		log.trace("state {}", state);
-		SessionInfo si = null;
-		try {
-			si = authService.checkStateParamAndReturnSessionInfo(state);
-		} catch (Exception e) {
-			log.error("", e);
-			return ResponseEntity.badRequest().build();
-		}
-		String uri = si.getRedirectUri().concat("?code=").concat(si.getCode()).concat("&state=").concat(state)
-				.concat("&iss=https%3A%2F%2Fpid-provider.example.org");
-		log.trace("callback response: {}", uri);
-		try {
-			String generateCallbackResponseJwt = qeaaIssuerService.generateCallbackResponseJwt(si, state, clientUrl);
-
-			log.trace("-> getCallback response JWT: {}", generateCallbackResponseJwt);
-			return ResponseEntity.status(HttpStatus.OK).body("response=".concat(generateCallbackResponseJwt));
-		} catch (JOSEException | ParseException e) {
-			log.error("", e);
+		} else {
+			log.error("Post callback response code not generated");
 			return ResponseEntity.internalServerError().build();
 		}
 
@@ -218,6 +198,8 @@ public class AuthController {
 		log.trace("-> code {}", code);
 		log.trace("-> DPoP header {}", dpop);
 
+		log.info("Token request: client_id {}", client_id);
+
 		tokenService.checkDpop(dpop);
 		try {
 			tokenService.checkParams(client_id, code, code_verifier);
@@ -227,15 +209,15 @@ public class AuthController {
 		}
 		TokenResponse response = tokenService.generateTokenResponse(client_id, dpop);
 		log.trace("token response: {}", response);
+		log.info("--> /token - success");
 		return ResponseEntity.ok(response);
 	}
 
 	@PostMapping(path = "/credential", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CredentialResponse> credential(
 			@FormParam("credential_definition") String credential_definition, @FormParam("format") String format,
-			@FormParam("proof") String proof,
-			@RequestHeader("DPoP") String dpop, @RequestHeader("Authorization") String authorization)
-			throws JOSEException, ParseException {
+			@FormParam("proof") String proof, @RequestHeader("DPoP") String dpop,
+			@RequestHeader("Authorization") String authorization) throws JOSEException, ParseException {
 
 		log.trace("/credential params: ");
 		log.trace("-> credential_definition {} - format {}", credential_definition, format);
@@ -243,27 +225,22 @@ public class AuthController {
 		log.trace("-> DPoP header {}", dpop);
 		log.trace("-> Authorization header {}", authorization);
 
+		log.info("Credential request received: credential_definition {} - format {}", credential_definition, format);
+
 		ProofRequest proofReq = null;
 		CredentialDefinitionDto credDefinition = null;
-		try {
-			credentialService.checkDpop(dpop);
-		} catch (Exception e) {
-			// TODO remove try-catch after integration
-			log.error("", e);
-		}
+		credentialService.checkDpop(dpop);
+
 		ObjectMapper om = new ObjectMapper();
 		try {
 			proofReq = om.readValue(proof, ProofRequest.class);
 			credDefinition = om.readValue(credential_definition, CredentialDefinitionDto.class);
 		} catch (JsonProcessingException e) {
-			log.error("", e);
+			log.error("proof or credential_definition malformed", e);
+			throw new MalformedCredentialRequestParamException("proof or credential_definition malformed");
 		}
-		try {
-			credentialService.checkAuthorizationAndProof(authorization, proofReq);
-		} catch (Exception e) {
-			// TODO remove try-catch after integration
-			log.error("", e);
-		}
+		credentialService.checkAuthorizationAndProof(authorization, proofReq);
+
 		CredentialResponse response;
 		try {
 			if (CredentialFormat.SD_JWT.value().equals(format)) {
@@ -273,14 +250,15 @@ public class AuthController {
 			}
 
 			log.trace("credential response: {}", response);
+			log.info("--> /credential - success");
 			return ResponseEntity.ok(response);
 		} catch (JOSEException e) {
-			log.error("", e);
+			log.error("Error in credential generation", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		} catch (ParseException e) {
-			log.error("", e);
+			log.error("Error in credential generation", e);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
-		
+
 	}
 }

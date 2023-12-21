@@ -23,7 +23,7 @@ public class CredentialClaimsDto implements Serializable {
 	@JsonProperty("tax_id_number")
 	private String taxIdNumber;
 
-	@JsonProperty("birth_date")
+	@JsonProperty("birthdate")
 	private String birthDate;
 
 	@JsonProperty("place_of_birth")

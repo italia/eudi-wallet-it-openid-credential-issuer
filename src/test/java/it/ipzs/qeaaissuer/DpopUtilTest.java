@@ -22,6 +22,7 @@ import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import it.ipzs.qeaaissuer.exception.JwsHeaderMissingFieldException;
 import it.ipzs.qeaaissuer.util.DpopUtil;
 
 class DpopUtilTest {
@@ -62,7 +63,7 @@ class DpopUtilTest {
 	void testParse_invalidDPoP() throws ParseException, JOSEException {
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class, (() -> dpopUtil.parse(
+		assertThrows(JwsHeaderMissingFieldException.class, (() -> dpopUtil.parse(
 				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.5mhBHqs5_DTLdINd9p5m7ZJ6XD0Xc55kIaCRY5r6HRA")));
 	}
 
@@ -76,7 +77,7 @@ class DpopUtilTest {
 		when(signedJWT.verify(jwsVerifier)).thenReturn(true);
 
 		// Test and Verify
-		assertThrows(IllegalArgumentException.class, (() -> dpopUtil.parse(
+		assertThrows(JwsHeaderMissingFieldException.class, (() -> dpopUtil.parse(
 				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")));
 	}
 

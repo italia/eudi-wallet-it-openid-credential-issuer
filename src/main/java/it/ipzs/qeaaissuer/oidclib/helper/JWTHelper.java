@@ -408,6 +408,14 @@ public class JWTHelper {
 		}
 	}
 
+	public static ECKey parseECKey(String s) throws OIDCException {
+		try {
+			return ECKey.parse(s);
+		} catch (Exception e) {
+			throw new JWTException.Parse(e);
+		}
+	}
+
 	public JWTHelper(GlobalOptions<?> options) {
 		this.options = options;
 	}

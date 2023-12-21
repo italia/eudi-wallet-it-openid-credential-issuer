@@ -26,6 +26,7 @@ management:
         enabled: true
     metrics:
       enabled: true
+      
 springdoc:
   cache:
    disabled: true
@@ -33,6 +34,7 @@ springdoc:
   - it.ipzs.qeaaissuer.controller
   paths-to-exclude:
   - /cie/**
+base-url: api.eudi-wallet-it-issuer.it
 auth-controller:
   redirect-url: https://api.eudi-wallet-it-issuer.it/request_uri
   client-url: https://api.eudi-wallet-it-issuer.it
@@ -49,6 +51,8 @@ keys:
   public-jwk-set-path: ${keys.directory-path}/eudi-pp-public-jwk.json
   encr-path: ${keys.directory-path}/eudi-encr-rp-key-jwk.json
   public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-rp-public-key-jwk.json
+  mdoc-path: ${keys.directory-path}/eudi-pp-mdoc-key-jwk.json
+  mdoc-public-path: ${keys.directory-path}/eudi-pp-mdoc-public-key-jwk.json
 pid-provider: #pid provider ES
   url: http://127.0.0.1:8081/ci/.well-known/openid-federation?format=json
 edc-service:
@@ -108,6 +112,7 @@ oidc:
       credential-endpoint: "http://${oidc.openid-credential-issuer.credential-issuer}/credential"
       jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
       sub: "http://${oidc.hosts.relying-party}:8080/ci"
+      mdoc-jwk-file-path: ${user.home}/key/eudi-pp-mdoc-key-jwk.json
    federation-entity:
      homepage-uri: "http://${oidc.hosts.relying-party}:8080/rp"
      organization-name: "EUDI IT Wallet Issuer"
