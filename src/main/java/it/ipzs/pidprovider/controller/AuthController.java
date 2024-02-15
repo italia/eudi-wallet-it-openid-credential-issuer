@@ -3,6 +3,8 @@ package it.ipzs.pidprovider.controller;
 import java.net.URI;
 import java.text.ParseException;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +25,8 @@ import it.ipzs.pidprovider.dto.CredentialResponse;
 import it.ipzs.pidprovider.dto.ParResponse;
 import it.ipzs.pidprovider.dto.ProofRequest;
 import it.ipzs.pidprovider.dto.TokenResponse;
+import it.ipzs.pidprovider.exception.MalformedCredentialProofException;
+import it.ipzs.pidprovider.exception.MissingOrBlankParamException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.service.AuthorizationService;
 import it.ipzs.pidprovider.service.CredentialService;
@@ -70,7 +75,8 @@ public class AuthController {
 		log.trace("-> request {}", request);
 		log.info("Par request received: client_id {}", client_id);
 
-		// TODO check validity client assertion
+		validateParams(response_type, client_id, code_challenge, code_challenge_method, client_assertion_type,
+				client_assertion, request);
 		Object cnf = parService.validateClientAssertionAndRetrieveCnf(client_assertion);
 		ParResponse response = parService.generateRequestUri(request, cnf);
 		log.trace("par response: {}", response);
@@ -85,6 +91,7 @@ public class AuthController {
 		log.info("Authorize request received: clientId {} - requestUri {}", client_id, request_uri);
 		log.trace("/authorize params: client_id {} - request_uri {}", client_id, request_uri);
 		// TODO eIDAS LoA High
+		validateParams(client_id, request_uri);
 		SessionInfo si = authService.retrieveStateParam(client_id, request_uri);
 		String uri = redirectUrl.concat("?state=").concat(si.getState());
 		log.trace("authorize response: {}", uri);
@@ -93,34 +100,37 @@ public class AuthController {
 				.location(URI.create(uri)).build();
 	}
 
-	@GetMapping(path = "/callback", produces = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-	public ResponseEntity<?> callback(@RequestParam Map<String, String> params, HttpServletRequest request,
-			HttpServletResponse response) {
+	@GetMapping(path = "/callback")
+	public ModelAndView callback(@RequestParam Map<String, String> params, HttpServletRequest request,
+			HttpServletResponse response) throws Exception {
 
-		// TODO manage params from eIDAS LoA High callback and redirect to app universal
-		// url
+		ModelAndView mav = new ModelAndView("form_post_callback");
+
 		String state = params.get("state");
 		log.info("Callback request received: state {}", state);
+		validateParams(state);
 		SessionInfo si = null;
 		String responseDirectPost = "";
 		try {
 			si = authService.checkStateParamAndReturnSessionInfo(state);
 		} catch (Exception e) {
 			log.error("", e);
-			return ResponseEntity.badRequest().build();
+			throw e;
 		}
-		String uri = si.getRedirectUri().concat("?code=").concat(si.getCode())
-				.concat("&state=").concat(state).concat("&iss=").concat(issuer);
 		try {
 			responseDirectPost = authService.generateDirectPostAuthorizeResponse(si, state, issuer);
 		} catch (JOSEException | ParseException e) {
 			log.error("Error in generating authorize response jwt", e);
-			return ResponseEntity.internalServerError().build();
+			throw e;
 		}
-		log.trace("callback response: {}", uri);
+		log.trace("callback response: {}", responseDirectPost);
 		log.info("callback request accepted");
-		return ResponseEntity.status(HttpStatus.OK).body("response=".concat(responseDirectPost));
+		mav.addObject("response", responseDirectPost);
+		mav.addObject("clientUri", si.getRedirectUri());
+
+		return mav;
 	}
+
 
 	@PostMapping(path = "/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<TokenResponse> token(@FormParam("grant_type") String grant_type,
@@ -128,11 +138,11 @@ public class AuthController {
 			@FormParam("code_verifier") String code_verifier,
 			@FormParam("client_assertion_type") String client_assertion_type,
 			@FormParam("client_assertion") String client_assertion, @FormParam("redirect_uri") String redirect_uri,
-			@RequestHeader("DPoP") String dpop) throws JOSEException, ParseException {
+			@RequestHeader("DPoP") String dpop)
+			throws JOSEException, ParseException {
 
 		log.trace("/token params: grant_type {} - client_assertion_type {}", grant_type, client_assertion_type);
 		log.trace("-> client_id {}", client_id);
-		log.trace("-> code_verifier {}", code_verifier);
 		log.trace("-> client_assertion {}", client_assertion);
 		log.trace("-> redirect_uri {}", redirect_uri);
 		log.trace("-> code_verifier {}", code_verifier);
@@ -141,13 +151,14 @@ public class AuthController {
 		
 		log.info("Token request: client_id {}", client_id);
 
-			tokenService.checkDpop(dpop);
-		try {
-			tokenService.checkParams(client_id, code, code_verifier);
-		} catch (Exception e) {
-			log.error("", e);
-			// TODO return error message code after integration
-		}
+		validateParams(grant_type, client_id, code, code_verifier, client_assertion, client_assertion_type,
+				redirect_uri);
+		validateHeaders(dpop);
+
+		tokenService.validateClientAssertion(client_assertion_type, client_assertion);
+		tokenService.checkDpop(dpop);
+		tokenService.checkParams(client_id, code, code_verifier);
+
 		TokenResponse response = tokenService.generateTokenResponse(client_id, dpop);
 		log.trace("token response: {}", response);
 		log.info("--> /token - success");
@@ -157,8 +168,8 @@ public class AuthController {
 	@PostMapping(path = "/credential", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<CredentialResponse> credential(
 			@FormParam("credential_definition") String credential_definition, @FormParam("format") String format,
-			@FormParam("proof") String proof,
-			@RequestHeader("DPoP") String dpop, @RequestHeader("Authorization") String authorization)
+			@FormParam("proof") String proof, @RequestHeader("DPoP") String dpop,
+			@RequestHeader("Authorization") String authorization)
 			throws JOSEException, ParseException {
 
 		log.trace("/credential params: credential_definition {} - format {}", credential_definition, format);
@@ -168,25 +179,20 @@ public class AuthController {
 		
 		log.info("Credential request received: credential_definition {} - format {}", credential_definition, format);
 
+		validateParams(credential_definition, format, proof);
+		validateHeaders(dpop, authorization);
+
 		ProofRequest proofReq = null;
+		credentialService.checkDpop(dpop);
+		ObjectMapper om = new ObjectMapper();
 		try {
-			credentialService.checkDpop(dpop);
-		} catch (Exception e) {
-			// TODO remove try-catch after integration
+			proofReq = om.readValue(proof, ProofRequest.class);
+			credentialService.validateProofRequest(proofReq, dpop);
+		} catch (JsonProcessingException e) {
 			log.error("", e);
+			throw new MalformedCredentialProofException("Credential proof not valid");
 		}
-		try {
-			ObjectMapper om = new ObjectMapper();
-			try {
-				proofReq = om.readValue(proof, ProofRequest.class);
-			} catch (JsonProcessingException e) {
-				log.error("", e);
-			}
-			credentialService.checkAuthorizationAndProof(authorization, proofReq);
-		} catch (Exception e) {
-			// TODO remove try-catch after integration
-			log.error("", e);
-		}
+		credentialService.checkAuthorizationAndProof(authorization, proofReq);
 		CredentialResponse response;
 		try {
 			response = credentialService.generateSdCredentialResponse(dpop, proofReq);
@@ -201,6 +207,20 @@ public class AuthController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		
+	}
+
+	private void validateParams(String... params) {
+		if (Stream.of(params).anyMatch(Objects::isNull) || Stream.of(params).anyMatch(String::isBlank)) {
+			log.error("Missing or blank param");
+			throw new MissingOrBlankParamException("Missing or blank param");
+		}
+	}
+
+	private void validateHeaders(String... headers) {
+		if (Stream.of(headers).anyMatch(Objects::isNull) || Stream.of(headers).anyMatch(String::isBlank)) {
+			log.error("Missing or blank header");
+			throw new MissingOrBlankParamException("Missing or blank header");
+		}
 	}
 
 }

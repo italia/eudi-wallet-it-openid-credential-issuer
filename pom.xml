@@ -6,20 +6,16 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.0</version>
+		<version>3.2.2</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.ipzs</groupId>
 	<artifactId>it-pid-provider</artifactId>
-	<version>1.4.0</version>
+	<version>1.4.1</version>
 	<name>it-pid-provider</name>
 	<description>IT PID Provider</description>
 	<properties>
 		<java.version>17</java.version>
-		<logback-core.version>1.4.14</logback-core.version>
-		<logback-classic.version>1.4.14</logback-classic.version>
-		<logback.version>1.4.14</logback.version>
-
 	</properties>
 	<dependencies>
 		<dependency>
@@ -61,7 +57,7 @@
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt</artifactId>
-			<version>0.9.1</version>
+			<version>0.12.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.authlete</groupId>
@@ -101,7 +97,6 @@
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<version>2.2.220</version>
 			<scope>runtime</scope>
 		</dependency>
 	</dependencies>

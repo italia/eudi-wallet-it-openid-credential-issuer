@@ -28,9 +28,11 @@ import it.ipzs.pidprovider.exception.PkceCodeValidationException;
 import it.ipzs.pidprovider.exception.SessionInfoByClientIdNotFoundException;
 import it.ipzs.pidprovider.exception.TokenCodeValidationException;
 import it.ipzs.pidprovider.exception.TokenDpopParsingException;
+import it.ipzs.pidprovider.exception.WalletInstanceAttestationVerificationException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.DpopUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
+import it.ipzs.pidprovider.util.WalletInstanceUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +44,7 @@ public class TokenService {
 	private final SRService srService;
 	private final DpopUtil dpopUtil;
 	private final SessionUtil sessionUtil;
+	private final WalletInstanceUtil walletInstanceUtil;
 	
 	@Value("${base-url}")
 	private String baseUrl;
@@ -104,13 +107,20 @@ public class TokenService {
 		}
 	}
 
-	public void checkParams(String clientId, String code, String codeVerifier) throws NoSuchAlgorithmException {
+	public void checkParams(String clientId, String code, String codeVerifier) {
 		log.debug("clientId {} - code {} - codeVerifier {}", clientId, code, codeVerifier);
 		SessionInfo sessionInfo = sessionUtil.getSessionInfo(clientId);
 		log.debug("sessionInfo {}", sessionInfo);
 		if (sessionInfo != null) {
 			if (sessionInfo.getCode().equals(code)) {
-				String calculatedCodeChallenge = encodeForPkceVerify(codeVerifier);
+				String calculatedCodeChallenge = "";
+				try {
+					calculatedCodeChallenge = encodeForPkceVerify(codeVerifier);
+				} catch (NoSuchAlgorithmException e) {
+					log.error("Error in encoding codeVerifier string for PKCE check", e);
+					throw new PkceCodeValidationException("Error with PKCE algorithm");
+				}
+
 				if (!calculatedCodeChallenge.equals(sessionInfo.getCodeChallenge())) {
 					log.error(
 							"Error pkce validation: codeChallenge calculated {} - codeChallenge in session {} - codeVerifier {}",
@@ -135,4 +145,14 @@ public class TokenService {
 		return encoded.replaceAll("=$", "");
 	}
 
+	public void validateClientAssertion(String client_assertion_type, String client_assertion) {
+		if ("urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation".equals(client_assertion_type)) {
+			try {
+				walletInstanceUtil.parse(client_assertion);
+			} catch (ParseException | JOSEException e) {
+				log.error("", e);
+				throw new WalletInstanceAttestationVerificationException("Malformed Wallet Instance Attestation JWT");
+			}
+		}
+	}
 }

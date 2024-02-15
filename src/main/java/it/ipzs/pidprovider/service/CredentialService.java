@@ -13,6 +13,7 @@ import com.authlete.sd.SDObjectBuilder;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import it.ipzs.pidprovider.dto.CredentialResponse;
 import it.ipzs.pidprovider.dto.EvidenceDto;
@@ -21,10 +22,12 @@ import it.ipzs.pidprovider.dto.ProofRequest;
 import it.ipzs.pidprovider.dto.RecordDto;
 import it.ipzs.pidprovider.dto.SourceDto;
 import it.ipzs.pidprovider.dto.VerifiedClaims;
+import it.ipzs.pidprovider.exception.AlreadyGeneratedCredentialException;
 import it.ipzs.pidprovider.exception.CredentialDpopParsingException;
 import it.ipzs.pidprovider.exception.CredentialJwtMissingClaimException;
 import it.ipzs.pidprovider.exception.CredentialNonceNotMatchException;
 import it.ipzs.pidprovider.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.pidprovider.exception.MalformedCredentialProofException;
 import it.ipzs.pidprovider.exception.SessionInfoByClientIdNotFoundException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.AccessTokenUtil;
@@ -32,6 +35,7 @@ import it.ipzs.pidprovider.util.CredentialProofUtil;
 import it.ipzs.pidprovider.util.DpopUtil;
 import it.ipzs.pidprovider.util.SdJwtUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
+import it.ipzs.pidprovider.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -110,6 +114,8 @@ public class CredentialService {
 				uniqueIdClaim, birthdateClaim, placeOfBirthClaim, taxClaim));
 
 		String sdJwtString = sdjwt.toString();
+		sessionInfo.setCredentialGenerated(true);
+		sessionUtil.putSessionInfo(sessionInfo);
 		// remove last tilde for SD-JWT draft 4 compliance
 		return sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
 	}
@@ -147,6 +153,10 @@ public class CredentialService {
 			SessionInfo sessionInfo = sessionUtil.getSessionInfo((String) proofClientId);
 			if (sessionInfo != null) {
 				log.debug("session info {}", sessionInfo);
+				if (sessionInfo.isCredentialGenerated()) {
+					log.error("Already generated credentials for this clientID: {}", sessionInfo.getClientId());
+					throw new AlreadyGeneratedCredentialException("Already generated credentials for this clientID");
+				}
 				String nonce = sessionInfo.getNonce();
 				if (nonce.equals(tokenNonce) && nonce.equals(proofNonce)) {
 					log.info("credential authorization and credential proof validated");
@@ -162,5 +172,22 @@ public class CredentialService {
 
 		}
 
+	}
+	
+
+	public void validateProofRequest(ProofRequest proofReq, String dpop) throws ParseException {
+		SignedJWT jwt = SignedJWT.parse(proofReq.getJwt());
+		JWK proofJwk = jwt.getHeader().getJWK();
+		JWK dpopJwk = dpopUtil.getJwk(dpop);
+		
+		if (StringUtil.isBlank(proofReq.getJwt())) {
+			throw new MalformedCredentialProofException("Proof request JWT not valid");
+		}
+		if (StringUtil.isBlank(proofReq.getProofType())) {
+			throw new MalformedCredentialProofException("Proof request type not valid");
+		}
+		if(!proofJwk.equals(dpopJwk)) {
+			throw new MalformedCredentialProofException("Proof request JWK not equals to dpop JWK");
+		}
 	}
 }

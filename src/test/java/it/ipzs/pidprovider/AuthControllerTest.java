@@ -36,7 +36,7 @@ class AuthControllerTest {
 		when(parService.validateClientAssertionAndRetrieveCnf("some valid client assertion")).thenReturn(cnf);
 		when(parService.generateRequestUri(request, cnf)).thenReturn(parResponse);
 
-		ResponseEntity<ParResponse> response = authController.parRequest(null, null, null, null, null,
+		ResponseEntity<ParResponse> response = authController.parRequest("test", "test", "test", "test", "test",
 				"some valid client assertion", request);
 
 		assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -52,6 +52,6 @@ class AuthControllerTest {
 
 
 		assertThatIllegalArgumentException().isThrownBy(() -> // when
-		authController.parRequest(null, null, null, null, null, "some valid client assertion", request));
+		authController.parRequest("test", "test", "test", "test", "test", "some valid client assertion", request));
 	}
 }

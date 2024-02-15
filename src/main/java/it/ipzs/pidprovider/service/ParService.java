@@ -12,8 +12,8 @@ import com.nimbusds.jwt.JWTClaimsSet;
 
 import it.ipzs.pidprovider.dto.ParResponse;
 import it.ipzs.pidprovider.exception.ClientAssertionValidationException;
-import it.ipzs.pidprovider.exception.ParRequestJwtValidationException;
 import it.ipzs.pidprovider.exception.ParRequestJwtMissingParameterException;
+import it.ipzs.pidprovider.exception.ParRequestJwtValidationException;
 import it.ipzs.pidprovider.model.SessionInfo;
 import it.ipzs.pidprovider.util.ParRequestJwtUtil;
 import it.ipzs.pidprovider.util.SessionUtil;
@@ -35,7 +35,6 @@ public class ParService {
 	}
 
 	public Object validateClientAssertionAndRetrieveCnf(String clientAssertion) {
-		// TODO validate wallet instance
 		try {
 			JWTClaimsSet parse = walletInstanceUtil.parse(clientAssertion);
 			log.info("- client assertion validated");
@@ -80,6 +79,8 @@ public class ParService {
 			response.setRequestUri("urn:ietf:params:oauth:request_uri:".concat(generateUriId()));
 			response.setExpiresIn(60);
 			si.setRequestUri(response.getRequestUri());
+			si.setVerified(false);
+			si.setCredentialGenerated(false);
 			sessionUtil.putSessionInfo(si);
 
 			return response;

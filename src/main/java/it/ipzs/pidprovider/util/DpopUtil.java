@@ -41,11 +41,9 @@ public class DpopUtil {
 		JWK jwk = jwsHeader.getJWK();
 		
 		JWSVerifier verifier;
-		 if (jwk instanceof ECKey) {
-				ECKey ecKey = (ECKey) jwk;
+		if (jwk instanceof ECKey ecKey) {
 	            verifier = new ECDSAVerifier(ecKey);
-			} else if (jwk instanceof RSAKey) {
-				RSAKey rsaKey = (RSAKey) jwk;
+		} else if (jwk instanceof RSAKey rsaKey) {
 	            verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
 			} else {
 				throw new JwkKeyTypeException("JWK key type not matched: " + jwk.getKeyType().getValue());
@@ -95,7 +93,7 @@ public class DpopUtil {
 		return claims.getStringClaim(HTU_CLAIM);
 	}
 
-	public Date getIatClaim(JWTClaimsSet claims) throws ParseException {
+	public Date getIatClaim(JWTClaimsSet claims) {
 		return claims.getIssueTime();
 	}
 

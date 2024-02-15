@@ -22,4 +22,7 @@ public class SessionInfo {
 	private String nonce;
 
 	private Object cnf;
+
+	private boolean credentialGenerated;
+
 }

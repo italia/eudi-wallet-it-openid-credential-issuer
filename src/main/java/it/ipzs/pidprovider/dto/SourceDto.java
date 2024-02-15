@@ -10,7 +10,7 @@ import lombok.Data;
 public class SourceDto implements Serializable {
 
 	private static final long serialVersionUID = -5567010555974595264L;
-	
+
 	@JsonProperty("organization_name")
 	private String organization_name;
 
