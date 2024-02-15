@@ -46,7 +46,7 @@ public class PidCredentialService {
 		RSAKey pidJwk = retrievePidSigningKey();
 
 		try {
-			Jwts.parser().verifyWith(pidJwk.toPublicKey()).build().parse(credentialJwtString);
+			Jwts.parser().verifyWith(pidJwk.toPublicKey()).build().parseSignedClaims(credentialJwtString);
 
 		} catch (Exception e) {
 			log.error("PID Credential JWT not verified", e);

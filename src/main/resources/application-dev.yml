@@ -35,7 +35,7 @@ keys:
   encr-path: ${keys.directory-path}/eudi-encr-rp-key-jwk.json
   public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-rp-public-key-jwk.json
 pid-provider: #pid provider ES
-  url: http://127.0.0.1:8081/ci/.well-known/openid-federation?format=json
+  url: https://api.eudi-wallet-it-pid-provider.it/ci/.well-known/openid-federation?format=json
 edc-service:
   url: http://localhost:9898/client/get/ 
 oidc:

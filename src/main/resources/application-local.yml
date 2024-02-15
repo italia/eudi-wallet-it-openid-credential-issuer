@@ -17,6 +17,12 @@ keys:
   public-jwk-set-path: ${keys.directory-path}/eudi-pp-public-jwk.json
   encr-path: ${keys.directory-path}/eudi-encr-rp-key-jwk.json
   public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-rp-public-key-jwk.json
+  mdoc-path: ${keys.directory-path}/eudi-pp-mdoc-key-jwk.json
+  mdoc-public-path: ${keys.directory-path}/eudi-pp-mdoc-public-key-jwk.json
+pid-provider: #pid provider ES
+  url: https://api.eudi-wallet-it-pid-provider.it/ci/.well-known/openid-federation?format=json
+edc-service:
+  url: http://localhost:9898/client/get/ 
 oidc:
    hosts:
       trust-anchor: 127.0.0.1
@@ -26,6 +32,7 @@ oidc:
       
    # required for onboarding checks and also for all the leafs
    default-trust-anchor: "https://demo.federation.eudi.wallet.developers.italia.it/"
+   federation-trust-chain-url: "https://demo.federation.eudi.wallet.developers.italia.it/fetch?sub=https://${base-url}/rp/"
 
    # List of trust anchors
    trust-anchors:

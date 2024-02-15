@@ -21,6 +21,7 @@ import com.google.iot.cbor.CborParseException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 import COSE.CoseException;
 import it.ipzs.qeaaissuer.dto.CedDto;
@@ -38,10 +39,12 @@ import it.ipzs.qeaaissuer.dto.ProofRequest;
 import it.ipzs.qeaaissuer.dto.RecordDto;
 import it.ipzs.qeaaissuer.dto.SourceDto;
 import it.ipzs.qeaaissuer.dto.VerifiedClaims;
+import it.ipzs.qeaaissuer.exception.AlreadyGeneratedCredentialException;
 import it.ipzs.qeaaissuer.exception.CredentialDpopParsingException;
 import it.ipzs.qeaaissuer.exception.CredentialJwtMissingClaimException;
 import it.ipzs.qeaaissuer.exception.CredentialNonceNotMatchException;
 import it.ipzs.qeaaissuer.exception.InvalidHtmAndHtuClaimsException;
+import it.ipzs.qeaaissuer.exception.MalformedCredentialProofException;
 import it.ipzs.qeaaissuer.exception.MdocCborGenerationException;
 import it.ipzs.qeaaissuer.exception.MdocWrongCredentialTypeException;
 import it.ipzs.qeaaissuer.exception.SessionInfoByClientIdNotFoundException;
@@ -52,6 +55,7 @@ import it.ipzs.qeaaissuer.util.DpopUtil;
 import it.ipzs.qeaaissuer.util.EDCUtil;
 import it.ipzs.qeaaissuer.util.SdJwtUtil;
 import it.ipzs.qeaaissuer.util.SessionUtil;
+import it.ipzs.qeaaissuer.util.StringUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -202,6 +206,8 @@ public class CredentialService {
 						issueDate, expiryDate, undistinguishingSign, documentNumber, drivingPriv, portrait));
 
 		String sdJwtString = sdjwt.toString();
+		sessionInfo.setCredentialGenerated(true);
+		sessionUtil.putSessionInfo(sessionInfo);
 		// remove last tilde for SD-JWT draft 4 compliance
 		return sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
 	}
@@ -296,6 +302,8 @@ public class CredentialService {
 				List.of(nameClaim, familyClaim, birthdateClaim, fiscalCodeClaim, serialClaim, expirationDateClaim,
 						accompanyRightClaim, evDisclosure));
 
+		sessionInfo.setCredentialGenerated(true);
+		sessionUtil.putSessionInfo(sessionInfo);
 		String sdJwtString = sdjwt.toString();
 		// remove last tilde for SD-JWT draft 4 compliance
 		return sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
@@ -450,6 +458,8 @@ public class CredentialService {
 			log.error("Mdoc Cbor generation failed", e);
 			throw new MdocCborGenerationException("Mdoc Cbor generation failed");
 		}
+		sessionInfo.setCredentialGenerated(true);
+		sessionUtil.putSessionInfo(sessionInfo);
 		return result;
 	}
 
@@ -562,6 +572,8 @@ public class CredentialService {
 						evDisclosure));
 
 		String sdJwtString = sdjwt.toString();
+		sessionInfo.setCredentialGenerated(true);
+		sessionUtil.putSessionInfo(sessionInfo);
 		// remove last tilde for SD-JWT draft 4 compliance
 		return sdJwtString.substring(0, sdJwtString.lastIndexOf("~"));
 
@@ -600,6 +612,10 @@ public class CredentialService {
 			SessionInfo sessionInfo = sessionUtil.getSessionInfo((String) proofClientId);
 			if (sessionInfo != null) {
 				log.debug("session info {}", sessionInfo);
+				if (sessionInfo.isCredentialGenerated()) {
+					log.error("Already generated credentials for this clientID: {}", sessionInfo.getClientId());
+					throw new AlreadyGeneratedCredentialException("Already generated credentials for this clientID");
+				}
 				String nonce = sessionInfo.getNonce();
 				if (nonce.equals(tokenNonce) && nonce.equals(proofNonce)) {
 					log.info("credential authorization and credential proof validated");
@@ -615,4 +631,23 @@ public class CredentialService {
 		}
 
 	}
+	
+	public void validateProofRequest(ProofRequest proofReq, String dpop) throws ParseException {
+		
+		SignedJWT jwt = SignedJWT.parse(proofReq.getJwt());
+		JWK proofJwk = jwt.getHeader().getJWK();
+		JWK dpopJwk = dpopUtil.getJwk(dpop);
+		
+		if (StringUtil.isBlank(proofReq.getJwt())) {
+			throw new MalformedCredentialProofException("Proof request JWT not valid");
+		}
+		if (StringUtil.isBlank(proofReq.getProofType())) {
+			throw new MalformedCredentialProofException("Proof request type not valid");
+		}
+		if(!proofJwk.equals(dpopJwk)) {
+			throw new MalformedCredentialProofException("Proof request JWK not equals to dpop JWK");
+		}
+
+	}
+
 }

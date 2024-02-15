@@ -38,4 +38,6 @@ public class SessionInfo {
 	private Map<String, Object> pidCredentialClaims;
 
 	private String responseCode;
+
+	private boolean credentialGenerated;
 }

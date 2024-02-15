@@ -40,7 +40,6 @@ public class ParService {
 	}
 
 	public Object validateClientAssertionAndRetrieveCnf(String clientAssertion) {
-		// TODO validate wallet instance
 		try {
 			JWTClaimsSet parse = walletInstanceUtil.parse(clientAssertion);
 			log.info("- client assertion validated");
@@ -86,6 +85,8 @@ public class ParService {
 			si.setWalletInstanceAttestation(clientAssertion);
 			si.setHashedWia(generateHashedWia(clientAssertion));
 			si.setRequestUri(response.getRequestUri());
+			si.setVerified(false);
+			si.setCredentialGenerated(false);
 			sessionUtil.putSessionInfo(si);
 
 			return response;

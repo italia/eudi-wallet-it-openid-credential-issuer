@@ -43,11 +43,9 @@ public class DpopUtil {
 		JWK jwk = jwsHeader.getJWK();
 
 		JWSVerifier verifier;
-		if (jwk instanceof ECKey) {
-			ECKey ecKey = (ECKey) jwk;
+		if (jwk instanceof ECKey ecKey) {
 			verifier = new ECDSAVerifier(ecKey);
-		} else if (jwk instanceof RSAKey) {
-			RSAKey rsaKey = (RSAKey) jwk;
+		} else if (jwk instanceof RSAKey rsaKey) {
 			verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
 		} else {
 			log.error("Jwk key type not matched: expected type ECKey/RSAKey - received type {}",

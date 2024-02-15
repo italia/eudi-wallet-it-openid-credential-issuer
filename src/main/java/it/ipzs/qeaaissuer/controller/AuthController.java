@@ -3,6 +3,8 @@ package it.ipzs.qeaaissuer.controller;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ import it.ipzs.qeaaissuer.dto.ProofRequest;
 import it.ipzs.qeaaissuer.dto.TokenResponse;
 import it.ipzs.qeaaissuer.exception.AuthResponseJwtGenerationException;
 import it.ipzs.qeaaissuer.exception.MalformedCredentialRequestParamException;
+import it.ipzs.qeaaissuer.exception.MissingOrBlankParamException;
 import it.ipzs.qeaaissuer.model.SessionInfo;
 import it.ipzs.qeaaissuer.service.AuthorizationService;
 import it.ipzs.qeaaissuer.service.CredentialService;
@@ -57,7 +60,6 @@ public class AuthController {
 
 	@Value("${auth-controller.client-url}")
 	private String clientUrl;
-
 	@PostMapping(path = "/as/par", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ParResponse> parRequest(@FormParam("response_type") String response_type,
 			@FormParam("client_id") String client_id, @FormParam("code_challenge") String code_challenge,
@@ -75,7 +77,8 @@ public class AuthController {
 		log.trace("-> client_assertion {}", client_assertion);
 		log.trace("-> request {}", request);
 
-		// TODO check validity client assertion
+		validateParams(response_type, client_id, code_challenge, code_challenge_method, client_assertion_type,
+				client_assertion, request);
 		Object cnf = parService.validateClientAssertionAndRetrieveCnf(client_assertion);
 		ParResponse response = parService.generateRequestUri(request, cnf, client_assertion);
 		log.trace("par response: {}", response);
@@ -89,6 +92,9 @@ public class AuthController {
 			@RequestParam("request_uri") String request_uri, HttpServletResponse response) throws Exception {
 
 		log.info("Authorize request received: clientId {} - requestUri {}", client_id, request_uri);
+
+		validateParams(client_id, request_uri);
+
 		ModelAndView mav = new ModelAndView("form_post");
 		log.trace("/authorize params");
 		log.trace("client_id {} - request_uri {}", client_id, request_uri);
@@ -127,6 +133,9 @@ public class AuthController {
 		log.trace("-> Authorization {}", wiaAuth);
 		log.trace("-> id {}", id);
 
+		validateParams(id);
+		validateHeaders(wiaAuth, wiaDpop);
+
 		log.info("Request uri : id {}", id);
 
 		String clientAssertion = wiaAuth.replace("DPoP ", "");
@@ -156,6 +165,9 @@ public class AuthController {
 		log.trace("/postCallback params:");
 		String directPostParam = params.get("response");
 		log.trace("response {}", directPostParam);
+
+		validateParams(directPostParam);
+
 		log.info("Post Callback request received");
 		SessionInfo sessionInfo = null;
 		try {
@@ -200,13 +212,13 @@ public class AuthController {
 
 		log.info("Token request: client_id {}", client_id);
 
+		validateParams(grant_type, client_id, code, code_verifier, client_assertion, client_assertion_type,
+				redirect_uri);
+		validateHeaders(dpop);
+		tokenService.validateClientAssertion(client_assertion_type, client_assertion);
 		tokenService.checkDpop(dpop);
-		try {
-			tokenService.checkParams(client_id, code, code_verifier);
-		} catch (Exception e) {
-			log.error("", e);
-//			return ResponseEntity.badRequest().build();
-		}
+		tokenService.checkParams(client_id, code, code_verifier);
+		
 		TokenResponse response = tokenService.generateTokenResponse(client_id, dpop);
 		log.trace("token response: {}", response);
 		log.info("--> /token - success");
@@ -227,6 +239,9 @@ public class AuthController {
 
 		log.info("Credential request received: credential_definition {} - format {}", credential_definition, format);
 
+		validateParams(credential_definition, format, proof);
+		validateHeaders(dpop, authorization);
+
 		ProofRequest proofReq = null;
 		CredentialDefinitionDto credDefinition = null;
 		credentialService.checkDpop(dpop);
@@ -235,6 +250,7 @@ public class AuthController {
 		try {
 			proofReq = om.readValue(proof, ProofRequest.class);
 			credDefinition = om.readValue(credential_definition, CredentialDefinitionDto.class);
+			credentialService.validateProofRequest(proofReq, dpop);
 		} catch (JsonProcessingException e) {
 			log.error("proof or credential_definition malformed", e);
 			throw new MalformedCredentialRequestParamException("proof or credential_definition malformed");
@@ -260,5 +276,19 @@ public class AuthController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 
+	}
+
+	private void validateParams(String... params) {
+		if (Stream.of(params).anyMatch(Objects::isNull) || Stream.of(params).anyMatch(String::isBlank)) {
+			log.error("Missing or blank param");
+			throw new MissingOrBlankParamException("Missing or blank param");
+		}
+	}
+
+	private void validateHeaders(String... headers) {
+		if (Stream.of(headers).anyMatch(Objects::isNull) || Stream.of(headers).anyMatch(String::isBlank)) {
+			log.error("Missing or blank header");
+			throw new MissingOrBlankParamException("Missing or blank header");
+		}
 	}
 }
