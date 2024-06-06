@@ -10,10 +10,15 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>it.ipzs</groupId>
-	<artifactId>it-pid-provider</artifactId>
-	<version>1.4.1</version>
-	<name>it-pid-provider</name>
-	<description>IT PID Provider</description>
+	<artifactId>eudi-it-wallet</artifactId>
+	<version>1.0.0</version>
+	<packaging>pom</packaging>
+	<name>eudi-it-wallet</name>
+	<description>EUDI IT Wallet</description>
+	<modules>
+		<module>qeaa-issuer</module>
+		<module>pid-provider</module>
+	</modules>
 	<properties>
 		<java.version>17</java.version>
 	</properties>

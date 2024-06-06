@@ -1,0 +1,1 @@
+java -Dspring.config.location=/app/edc-ws/application.properties -jar /app/edc-ws/qeaa-issuer-ws-1.0.0.jar & java -Dspring.config.location=/appconfig/application.yml -Dspring.pidfile=/app/pid/application.pid -jar /app/app.jar
