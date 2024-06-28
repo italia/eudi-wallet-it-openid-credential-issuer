@@ -1,58 +1,30 @@
 package it.ipzs.qeaaissuer.service;
 
-import java.io.ByteArrayInputStream;
+import COSE.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
+import com.google.iot.cbor.*;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWK;
+import com.upokecenter.cbor.CBORObject;
+import it.ipzs.qeaaissuer.dto.*;
+import it.ipzs.qeaaissuer.exception.MdocCborX5CGenerationException;
+import it.ipzs.qeaaissuer.oidclib.OidcWrapper;
+import it.ipzs.qeaaissuer.util.StringUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-
-import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
-import com.google.iot.cbor.CborArray;
-import com.google.iot.cbor.CborByteString;
-import com.google.iot.cbor.CborConversionException;
-import com.google.iot.cbor.CborInteger;
-import com.google.iot.cbor.CborMap;
-import com.google.iot.cbor.CborObject;
-import com.google.iot.cbor.CborParseException;
-import com.google.iot.cbor.CborTextString;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.jwk.JWK;
-import com.upokecenter.cbor.CBORObject;
-
-import COSE.Attribute;
-import COSE.CoseException;
-import COSE.HeaderKeys;
-import COSE.Message;
-import COSE.MessageTag;
-import COSE.OneKey;
-import it.ipzs.qeaaissuer.dto.IssuerSignedDto;
-import it.ipzs.qeaaissuer.dto.IssuerSignedItemDto;
-import it.ipzs.qeaaissuer.dto.MdocCborDto;
-import it.ipzs.qeaaissuer.dto.MdocDocument;
-import it.ipzs.qeaaissuer.dto.MobileSecurityObjectPayload;
-import it.ipzs.qeaaissuer.exception.MdocCborX5CGenerationException;
-import it.ipzs.qeaaissuer.oidclib.OidcWrapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -190,8 +162,9 @@ public class MdocCborService {
 				COSE.Sign1Message co = new COSE.Sign1Message(false);
 				co.addAttribute(HeaderKeys.Algorithm, CBORObject.FromObject(-7), Attribute.PROTECTED);
 				co.SetContent(payload.byteArrayValue());
-				CborByteString x5chain = CborByteString.create(getX509().getEncoded(), 0,
-						getX509().getEncoded().length);
+				byte[] x5Chain = getX5Chain();
+				CborByteString x5chain = CborByteString.create(x5Chain, 0,
+						x5Chain.length);
 				
 				co.addAttribute(CBORObject.FromObject(33),
 						CBORObject.FromObject(x5chain.byteArrayValue()),
@@ -379,36 +352,16 @@ public class MdocCborService {
 		return digit;
 	}
 
-	// TODO self signed for testing purpose, read from file in config
-	public X509Certificate getX509() throws Exception {
-		String pemCertificateString = """
-				-----BEGIN CERTIFICATE-----
-				MIIB7jCCAZQCCQCAsWXTnDM6FzAKBggqhkjOPQQDAjB/MQswCQYDVQQGEwJJVDEN
-				MAsGA1UECAwEUm9tZTENMAsGA1UEBwwEUm9tZTEZMBcGA1UECgwQUUVBQSBJc3N1
-				ZXIgRGVtbzEZMBcGA1UECwwQUUVBQSBJc3N1ZXIgRGVtbzEcMBoGA1UEAwwTcWVh
-				YS1pc3N1ZXIuZGVtby5pdDAeFw0yMzEyMjExMDAwMzFaFw0yNjA0MjkxMDAwMzFa
-				MH8xCzAJBgNVBAYTAklUMQ0wCwYDVQQIDARSb21lMQ0wCwYDVQQHDARSb21lMRkw
-				FwYDVQQKDBBRRUFBIElzc3VlciBEZW1vMRkwFwYDVQQLDBBRRUFBIElzc3VlciBE
-				ZW1vMRwwGgYDVQQDDBNxZWFhLWlzc3Vlci5kZW1vLml0MFkwEwYHKoZIzj0CAQYI
-				KoZIzj0DAQcDQgAEWMDoR7in9kw7PF5qEsml1OfhYXjKu0DnhgRrC34rRSuvnCS2
-				bMoiWfKQS+s7DJUol5vdmsGJDFWm0q/ZJoV2ozAKBggqhkjOPQQDAgNIADBFAiBY
-				m/VdkIm1CuBJv51MjYMAYMtv8I3jRJMjnOffZ5tPZwIhAN5pHklR0HNqJh3Ra/Sn
-				dYYlfy9iGPiIDWYKrZshoWng
-				-----END CERTIFICATE-----
-								""";
+	public byte[] getX5Chain() throws Exception {
 
-		try {
-			X509Certificate certificate = convertStringToX509Cert(pemCertificateString);
+		String chainString = oidcWrapper.getCredentialIssuerMdocX5Chain();
 
-			return certificate;
-		} catch (CertificateException | IOException e) {
-			log.error("Error in generating X509 Certificate", e);
-			throw new MdocCborX5CGenerationException("Error in generating X509 Certificate");
+		if (StringUtil.isBlank(chainString)) {
+			log.error("Error in X5Chain retrieval");
+			throw new MdocCborX5CGenerationException("Error in X5Chain retrieval");
+		} else {
+			return chainString.getBytes();
 		}
 	}
 
-	private X509Certificate convertStringToX509Cert(String certificate) throws Exception {
-		InputStream targetStream = new ByteArrayInputStream(certificate.getBytes());
-		return (X509Certificate) CertificateFactory.getInstance("X509").generateCertificate(targetStream);
-	}
 }

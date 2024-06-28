@@ -1,13 +1,16 @@
 package it.ipzs.qeaaissuer.oidclib;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.nimbusds.jose.jwk.JWK;
+import it.ipzs.qeaaissuer.oidclib.callback.RelyingPartyLogoutCallback;
+import it.ipzs.qeaaissuer.oidclib.exception.OIDCException;
+import it.ipzs.qeaaissuer.oidclib.handler.OidcHandler;
+import it.ipzs.qeaaissuer.oidclib.model.*;
+import it.ipzs.qeaaissuer.oidclib.persistence.H2PersistenceImpl;
+import it.ipzs.qeaaissuer.oidclib.schemas.OIDCProfile;
+import it.ipzs.qeaaissuer.oidclib.schemas.ProviderButtonInfo;
+import it.ipzs.qeaaissuer.oidclib.schemas.WellKnownData;
+import it.ipzs.qeaaissuer.oidclib.util.Validator;
+import jakarta.annotation.PostConstruct;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,25 +21,13 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import com.nimbusds.jose.jwk.JWK;
-
-import it.ipzs.qeaaissuer.oidclib.callback.RelyingPartyLogoutCallback;
-import it.ipzs.qeaaissuer.oidclib.exception.OIDCException;
-import it.ipzs.qeaaissuer.oidclib.handler.OidcHandler;
-import it.ipzs.qeaaissuer.oidclib.model.CredentialDefinition;
-import it.ipzs.qeaaissuer.oidclib.model.CredentialEHICSubject;
-import it.ipzs.qeaaissuer.oidclib.model.CredentialField;
-import it.ipzs.qeaaissuer.oidclib.model.CredentialMDLSubject;
-import it.ipzs.qeaaissuer.oidclib.model.CredentialSubject;
-import it.ipzs.qeaaissuer.oidclib.model.CredentialType;
-import it.ipzs.qeaaissuer.oidclib.model.DisplayConf;
-import it.ipzs.qeaaissuer.oidclib.model.LogoConf;
-import it.ipzs.qeaaissuer.oidclib.persistence.H2PersistenceImpl;
-import it.ipzs.qeaaissuer.oidclib.schemas.OIDCProfile;
-import it.ipzs.qeaaissuer.oidclib.schemas.ProviderButtonInfo;
-import it.ipzs.qeaaissuer.oidclib.schemas.WellKnownData;
-import it.ipzs.qeaaissuer.oidclib.util.Validator;
-import jakarta.annotation.PostConstruct;
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class OidcWrapper {
@@ -176,6 +167,10 @@ public class OidcWrapper {
 		return parsedJWK;
 	}
 
+	public String getCredentialIssuerMdocX5Chain() {
+		return oidcHandler.getCredentialOptions().getMdocX5Chain();
+	}
+	
 	public String getCredentialIssuerTrustMarks() {
 		return oidcHandler.getCredentialOptions().getTrustMarks();
 	}
@@ -261,6 +256,7 @@ public class OidcWrapper {
 
 		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
 		String mdocCredJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getMdocJwkFilePath());
+		String mdocX5Chain = readFile(oidcConfig.getOpenidCredentialIssuer().getMdocX5CFilePath());
 
 		OIDCCredentialIssuerOptions credentialOptions = OIDCCredentialIssuerOptions.builder()
 				.pushedAuthorizationRequestEndpoint(
@@ -272,6 +268,7 @@ public class OidcWrapper {
 				.credentialsSupported(generateCredentialSupportedList())
 				.jwk(credJwk)
 				.mdocJwk(mdocCredJwk)
+				.mdocX5Chain(mdocX5Chain)
 				.sub(oidcConfig.getOpenidCredentialIssuer().getSub())
 				.trustChain(oidcConfig.getOpenidCredentialIssuer().getTrustChain())
 				.build();
@@ -577,10 +574,12 @@ public class OidcWrapper {
 		String encrJwk = readFile(oidcConfig.getRelyingParty().getEncrJwkFilePath());
 		String credJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getJwkFilePath());
 		String mdocCredJwk = readFile(oidcConfig.getOpenidCredentialIssuer().getMdocJwkFilePath());
+		String mdocX5Chain = readFile((oidcConfig.getOpenidCredentialIssuer().getMdocX5CFilePath()));
 		this.oidcHandler.getCredentialOptions().setJwk(credJwk);
 		this.oidcHandler.getRelyingPartyOptions().setJWK(jwk);
 		this.oidcHandler.getRelyingPartyOptions().setEncrJWK(encrJwk);
 		this.oidcHandler.getCredentialOptions().setMdocJwk(mdocCredJwk);
+		this.oidcHandler.getCredentialOptions().setMdocX5Chain(mdocX5Chain);
 		logger.debug("key reloaded!");
 	}
 

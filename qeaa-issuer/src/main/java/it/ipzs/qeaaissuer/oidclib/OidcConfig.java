@@ -1,19 +1,12 @@
 package it.ipzs.qeaaissuer.oidclib;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import it.ipzs.qeaaissuer.oidclib.schemas.OIDCProfile;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import it.ipzs.qeaaissuer.oidclib.schemas.OIDCProfile;
+import java.util.*;
 
 @Configuration
 @ConfigurationProperties(prefix = "oidc")
@@ -307,6 +300,7 @@ public class OidcConfig extends BaseConfig {
 		private String jwkFilePath;
 		private String mdocJwkFilePath;
 		private String encrJwkFilePath;
+		private String mdocX5CFilePath;
 		private String sub;
 		private List<String> trustChain = new ArrayList<>();
 
@@ -372,6 +366,14 @@ public class OidcConfig extends BaseConfig {
 
 		public void setJwkFilePath(String jwkFilePath) {
 			this.jwkFilePath = jwkFilePath;
+		}
+
+		public String getMdocX5CFilePath() {
+			return mdocX5CFilePath;
+		}
+
+		public void setMdocX5CFilePath(String mdocX5CFilePath) {
+			this.mdocX5CFilePath = mdocX5CFilePath;
 		}
 
 		public String getMdocJwkFilePath() {

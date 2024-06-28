@@ -34,6 +34,8 @@ keys:
   mdoc-public-path: ${keys.directory-path}/eudi-pp-mdoc-public-key-jwk.json
   encr-path: ${keys.directory-path}/eudi-encr-rp-key-jwk.json
   public-encr-jwk-set-path: ${keys.directory-path}/eudi-encr-rp-public-key-jwk.json
+  x5c-path: ${keys.directory-path}/x5c.txt
+  x5c-url: http://localhost:8080/api/certificates #for testing purpose, ref to CA
 pid-provider: #pid provider ES
   url: https://api.eudi-wallet-it-pid-provider.it/ci/.well-known/openid-federation?format=json
 edc-service:
@@ -94,6 +96,7 @@ oidc:
       jwk-file-path: ${user.home}/key/eudi-pp-key-jwk.json
       sub: "http://${oidc.hosts.relying-party}/ci"
       mdoc-jwk-file-path: ${user.home}/key/eudi-pp-mdoc-key-jwk.json
+      x5c-path: ${keys.directory-path}/x5c.txt
    federation-entity:
      homepage-uri: "http://${oidc.hosts.relying-party}/rp"
      organization-name: "Istituto Poligrafico e Zecca dello Stato"

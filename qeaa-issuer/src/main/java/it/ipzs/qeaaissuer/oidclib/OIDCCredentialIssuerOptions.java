@@ -1,11 +1,11 @@
 package it.ipzs.qeaaissuer.oidclib;
 
-import java.util.List;
-
 import it.ipzs.qeaaissuer.oidclib.model.CredentialType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Builder
 @Getter
@@ -14,6 +14,7 @@ public class OIDCCredentialIssuerOptions extends GlobalOptions<OIDCCredentialIss
 
 	private String jwk;
 	private String mdocJwk;
+	private String mdocX5Chain;
 	private String credentialIssueUrl;
 	private String authorizationEndpoint;
 	private String tokenEndpoint;
